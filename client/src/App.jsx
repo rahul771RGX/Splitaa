@@ -1,31 +1,31 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ExpensesProvider } from './context/ExpensesContext';
-import Navigation from './components/Navigation';
-import Dashboard from './pages/Dashboard';
-import Friends from './pages/Friends';
-import Expenses from './pages/Expenses';
-import AddExpense from './pages/AddExpense';
-import SettleUp from './pages/SettleUp';
-import 'bootstrap-icons/font/bootstrap-icons.css';
+import { Routes, Route } from 'react-router-dom'
+import { navigationItems } from './config/navigation'
+import Login from './pages/Login'
+import Home from './pages/Home'
+import Groups from './pages/Groups'
+import Account from './pages/Account'
+import Payment from './pages/Payment'
 
 function App() {
   return (
-    <ExpensesProvider>
-      <Router>
-        <div className="app-container">
-          <Navigation />
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/friends" element={<Friends />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/expenses/add" element={<AddExpense />} />
-            <Route path="/settle" element={<SettleUp />} />
-          </Routes>
-        </div>
-      </Router>
-    </ExpensesProvider>
-  );
+    <div className="App">
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/payments" element={<Payment />} />
+        {navigationItems.map(navItem => (
+          <Route 
+            key={navItem.id} 
+            path={navItem.path} 
+            element={
+              navItem.id === 'home' ? <Home /> :
+              navItem.id === 'groups' ? <Groups /> :
+              navItem.id === 'account' ? <Account /> : null
+            } 
+          />
+        ))}
+      </Routes>
+    </div>
+  )
 }
 
-export default App;
+export default App
