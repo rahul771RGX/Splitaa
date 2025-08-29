@@ -48,51 +48,54 @@ function DesktopNavbar() {
 
   return (
     <Navbar style={styles.navbar} className="px-4 py-3 shadow-sm d-none d-md-flex">
-      <Navbar.Brand style={styles.brandName}>Splitaa</Navbar.Brand>
-      <Nav className="ms-auto align-items-center">
-        {navigationItems.map(navItem => (
-          <Nav.Link 
-            key={navItem.id}
-            style={{
-              ...styles.navLink, 
-              ...(isActivePath(location.pathname, navItem.path) ? styles.navLinkActive : {})
-            }}
-            onClick={() => navigate(navItem.path)}
-            onMouseEnter={(e) => {
-              if (!isActivePath(location.pathname, navItem.path)) {
-                e.target.style.color = '#22C55E'
-                e.target.style.backgroundColor = '#DCFCE7'
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isActivePath(location.pathname, navItem.path)) {
-                e.target.style.color = '#6B7280'
-                e.target.style.backgroundColor = 'transparent'
-              }
-            }}
-          >
-            <i className={`${navItem.icon} me-1`}></i>{navItem.label}
-          </Nav.Link>
-        ))}
+      <div className="container-fluid d-flex justify-content-between align-items-center" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <Navbar.Brand style={styles.brandName}>Splitaa</Navbar.Brand>
+        
+        <Nav className="align-items-center">
+          {navigationItems.map(navItem => (
+            <Nav.Link 
+              key={navItem.id}
+              style={{
+                ...styles.navLink, 
+                ...(isActivePath(location.pathname, navItem.path) ? styles.navLinkActive : {})
+              }}
+              onClick={() => navigate(navItem.path)}
+              onMouseEnter={(e) => {
+                if (!isActivePath(location.pathname, navItem.path)) {
+                  e.target.style.color = '#22C55E'
+                  e.target.style.backgroundColor = theme.accent.lightGreen
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActivePath(location.pathname, navItem.path)) {
+                  e.target.style.color = theme.text.secondary
+                  e.target.style.backgroundColor = 'transparent'
+                }
+              }}
+            >
+              <i className={`${navItem.icon} me-1`}></i>{navItem.label}
+            </Nav.Link>
+          ))}
+        </Nav>
+
         <Button 
           variant="outline-secondary" 
           size="sm" 
-          className="ms-3 me-2" 
           style={styles.notificationBtn}
           onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#F8FAFC'
+            e.target.style.backgroundColor = theme.button.secondaryHover
             e.target.style.borderColor = '#22C55E'
             e.target.style.color = '#22C55E'
           }}
           onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#FFFFFF'
-            e.target.style.borderColor = '#E5E7EB'
-            e.target.style.color = '#6B7280'
+            e.target.style.backgroundColor = theme.bg.secondary
+            e.target.style.borderColor = theme.border.primary
+            e.target.style.color = theme.text.secondary
           }}
         >
           <i className="bi bi-bell"></i>
         </Button>
-      </Nav>
+      </div>
     </Navbar>
   )
 }

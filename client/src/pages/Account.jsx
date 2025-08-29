@@ -129,15 +129,12 @@ function Account() {
         setShowPasswordModal(true)
         break
       case 'payments':
-        // Navigate to payments history
         console.log('Navigate to payments history')
         break
       case 'privacy':
-        // Navigate to privacy settings
         console.log('Navigate to privacy settings')
         break
       case 'help':
-        // Navigate to help
         console.log('Navigate to help')
         break
       default:
@@ -146,7 +143,6 @@ function Account() {
   }
 
   const handleLogout = () => {
-    // Handle logout logic
     console.log('Logout user')
   }
 
@@ -160,7 +156,6 @@ function Account() {
       }}>
         <h2 style={styles.pageTitle}>Account</h2>
 
-        {/* Profile Section */}
         <div style={styles.profileSection}>
           <Card style={styles.profileCard}>
             <div style={styles.profileHeader}>
@@ -175,7 +170,6 @@ function Account() {
           </Card>
         </div>
 
-        {/* Account Settings */}
         <Card style={styles.settingsCard}>
           <div 
             style={styles.settingItem}
@@ -224,7 +218,6 @@ function Account() {
           </div>
         </Card>
 
-        {/* Privacy & Support */}
         <Card style={styles.settingsCard}>
           <div 
             style={styles.settingItem}
@@ -249,7 +242,6 @@ function Account() {
           </div>
         </Card>
 
-        {/* Logout Button */}
         <Button 
           style={styles.logoutBtn}
           onClick={handleLogout}
@@ -261,7 +253,6 @@ function Account() {
         </Button>
       </Container>
 
-      {/* Change Password Modal */}
       <Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Change Password</Modal.Title>
@@ -289,7 +280,6 @@ function Account() {
           <Button 
             style={{backgroundColor: '#22C55E', border: 'none'}}
             onClick={() => {
-              // Handle password change
               setShowPasswordModal(false)
             }}
           >

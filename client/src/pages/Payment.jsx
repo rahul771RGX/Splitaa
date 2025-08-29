@@ -75,7 +75,6 @@ function Payment() {
   }
 
   const handleSendPayment = () => {
-    // Handle payment logic here
     console.log('Sending payment:', { amount, recipient })
   }
 
@@ -89,7 +88,6 @@ function Payment() {
       }}>
         <h2 style={styles.pageTitle}>Send Payment</h2>
 
-        {/* Payment Form */}
         <Card style={styles.paymentCard}>
           <Card.Body className="p-4">
             <Form>
@@ -164,7 +162,6 @@ function Payment() {
           </Card.Body>
         </Card>
 
-        {/* Recent Payments */}
         <Card style={styles.paymentCard}>
           <Card.Body className="p-4">
             <h5 className="mb-3">Recent Payments</h5>

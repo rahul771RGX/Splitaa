@@ -9,7 +9,6 @@ function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    // Simple validation for demo
     if (email && password) {
       navigate('/home')
     }

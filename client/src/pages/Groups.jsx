@@ -124,31 +124,28 @@ function Groups() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // Check URL parameters to auto-open modal
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
       setShowCreateModal(true)
-      // Remove the parameter to clean up URL
       searchParams.delete('create')
       setSearchParams(searchParams)
     }
   }, [searchParams, setSearchParams])
 
-  // Sample groups data
   const groups = [
     {
       id: 1,
       name: 'Weekend Trip',
       members: ['You', 'John', 'Sarah', 'Mike'],
       balance: 250.50,
-      type: 'owed' // you are owed
+      type: 'owed' 
     },
     {
       id: 2,
       name: 'Office Lunch',
       members: ['You', 'Alice', 'Bob', 'Carol', 'David'],
       balance: -120.25,
-      type: 'owe' // you owe
+      type: 'owe' 
     },
     {
       id: 3,

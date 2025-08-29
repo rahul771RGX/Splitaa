@@ -15,22 +15,18 @@ body {
   overflow-x: hidden;
 }
 
-/* Hide scrollbar for webkit browsers (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
   display: none;
 }
 
-/* Hide scrollbar for Firefox */
 html {
   scrollbar-width: none;
 }
 
-/* Hide scrollbar for IE and Edge */
 body {
   -ms-overflow-style: none;
 }
 
-/* Login Page */
 .login-page {
   background: linear-gradient(135deg, #DCFCE7 0%, #FFFFFF 100%);
   min-height: 100vh;

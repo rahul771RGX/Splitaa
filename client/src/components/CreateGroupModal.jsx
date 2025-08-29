@@ -134,14 +134,12 @@ function CreateGroupModal({ show, onHide }) {
 
   const handleCreateGroup = () => {
     if (groupName.trim()) {
-      // Here you would typically save the group
       console.log('Creating group:', {
         name: groupName,
         description: groupDescription,
         members: members
       })
       
-      // Reset form
       setGroupName('')
       setGroupDescription('')
       setMembers([{ id: 1, name: 'You', email: 'you@example.com', isOwner: true }])

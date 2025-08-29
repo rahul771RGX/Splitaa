@@ -135,15 +135,12 @@ function BottomNavigation() {
 
   const handleCreateEvent = () => {
     setShowCreateModal(false)
-    // Open the CreateGroupModal directly instead of navigating
     setShowGroupModal(true)
   }
 
   const handleJoinQR = () => {
     setShowCreateModal(false)
-    // For now, show an alert about QR functionality (you can implement QR scanner later)
     alert('QR Scanner feature coming soon! You can manually join groups for now.')
-    // Future: navigate('/join-qr') or open QR scanner modal
   }
 
   const handleOverlayClick = () => {
@@ -179,7 +176,6 @@ function BottomNavigation() {
                   <i className={navItem.mobileIcon} style={styles.bottomNavIcon}></i>
                   <span style={styles.bottomNavText}>{navItem.label}</span>
                 </Button>
-                {/* Add the create button after the second item (Groups) */}
                 {index === 1 && (
                   <>
                     <Button 
@@ -218,7 +214,6 @@ function BottomNavigation() {
         </Container>
       </div>
 
-      {/* Bottom Sheet Overlay */}
       {showCreateModal && (
         <div 
           style={{
@@ -229,7 +224,6 @@ function BottomNavigation() {
         />
       )}
 
-      {/* Bottom Sheet */}
       <div 
         style={{
           ...styles.bottomSheet,
