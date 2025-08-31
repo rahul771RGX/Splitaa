@@ -4,11 +4,11 @@ import BottomNavigation from '../components/BottomNavigation'
 import CreateGroupModal from '../components/CreateGroupModal'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useTheme } from '../contexts/ThemeContext'
 
 const styles = {
   groupsPage: {
-    minHeight: '100vh',
-    backgroundColor: '#F8FAFC'
+    minHeight: '100vh'
   },
   mainContent: {
     paddingTop: '2rem',
@@ -28,13 +28,11 @@ const styles = {
   pageTitle: {
     fontSize: '1.5rem',
     fontWeight: '600',
-    color: '#1F2937',
     marginBottom: '1.5rem'
   },
   groupCard: {
     borderRadius: '16px',
     border: 'none',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
     marginBottom: '1rem',
     transition: 'transform 0.2s ease, box-shadow 0.2s ease'
   },
@@ -47,12 +45,10 @@ const styles = {
   groupName: {
     fontSize: '1.1rem',
     fontWeight: '600',
-    color: '#1F2937',
     margin: '0'
   },
   groupMembers: {
     fontSize: '0.85rem',
-    color: '#6B7280',
     margin: '0'
   },
   balanceSection: {
@@ -72,7 +68,7 @@ const styles = {
     color: '#EF4444'
   },
   neutralBalance: {
-    color: '#6B7280'
+    color: '#9CA3AF'
   },
   settleButton: {
     backgroundColor: '#22C55E',
@@ -101,7 +97,6 @@ const styles = {
     width: '80px',
     height: '80px',
     borderRadius: '50%',
-    backgroundColor: '#DCFCE7',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -111,7 +106,6 @@ const styles = {
     width: '40px',
     height: '40px',
     borderRadius: '50%',
-    backgroundColor: '#DCFCE7',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -121,6 +115,7 @@ const styles = {
 
 function Groups() {
   const isMobile = window.innerWidth < 768
+  const { colors } = useTheme()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -176,14 +171,20 @@ function Groups() {
   }
 
   return (
-    <div style={styles.groupsPage}>
+    <div style={{
+      ...styles.groupsPage,
+      backgroundColor: colors.bg.primary
+    }}>
       <DesktopNavbar />
 
       <Container style={{
         ...styles.mainContent,
         ...(isMobile ? styles.mainContentMobile : styles.mainContentDesktop)
       }}>
-        <h2 style={styles.pageTitle}>Your Groups</h2>
+        <h2 style={{
+          ...styles.pageTitle,
+          color: colors.text.primary
+        }}>Your Groups</h2>
 
         <Button 
           style={styles.createGroupButton}
@@ -205,25 +206,38 @@ function Groups() {
             {groups.map(group => (
               <Card 
                 key={group.id}
-                style={styles.groupCard}
+                style={{
+                  ...styles.groupCard,
+                  backgroundColor: colors.bg.card,
+                  boxShadow: `0 4px 12px ${colors.isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.08)'}`
+                }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.12)'
+                  e.currentTarget.style.boxShadow = `0 8px 20px ${colors.isDarkMode ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.12)'}`
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)'
+                  e.currentTarget.style.boxShadow = `0 4px 12px ${colors.isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.08)'}`
                 }}
               >
                 <Card.Body className="p-4">
                   <div style={styles.groupHeader}>
                     <div className="d-flex align-items-center">
-                      <div style={styles.groupIcon}>
+                      <div style={{
+                        ...styles.groupIcon,
+                        backgroundColor: colors.brand.light
+                      }}>
                         <i className="bi bi-people" style={{ color: '#22C55E', fontSize: '1.2rem' }}></i>
                       </div>
                       <div>
-                        <h5 style={styles.groupName}>{group.name}</h5>
-                        <p style={styles.groupMembers}>
+                        <h5 style={{
+                          ...styles.groupName,
+                          color: colors.text.primary
+                        }}>{group.name}</h5>
+                        <p style={{
+                          ...styles.groupMembers,
+                          color: colors.text.secondary
+                        }}>
                           {group.members.length} members: {group.members.join(', ')}
                         </p>
                       </div>
@@ -262,11 +276,14 @@ function Groups() {
           </div>
         ) : (
           <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}>
+            <div style={{
+              ...styles.emptyIcon,
+              backgroundColor: colors.brand.light
+            }}>
               <i className="bi bi-people" style={{ fontSize: '2rem', color: '#22C55E' }}></i>
             </div>
-            <h4>No groups yet</h4>
-            <p style={{ color: '#6B7280' }}>Create a group to start splitting expenses with friends</p>
+            <h4 style={{ color: colors.text.primary }}>No groups yet</h4>
+            <p style={{ color: colors.text.secondary }}>Create a group to start splitting expenses with friends</p>
           </div>
         )}
       </Container>

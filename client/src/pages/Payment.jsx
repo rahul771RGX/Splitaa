@@ -2,11 +2,11 @@ import { Container, Card, Button, Row, Col, Form } from 'react-bootstrap'
 import { useState } from 'react'
 import DesktopNavbar from '../components/Navbar'
 import BottomNavigation from '../components/BottomNavigation'
+import { useTheme } from '../contexts/ThemeContext'
 
 const styles = {
   paymentPage: {
-    minHeight: '100vh',
-    backgroundColor: '#F8FAFC'
+    minHeight: '100vh'
   },
   mainContent: {
     paddingTop: '2rem',
@@ -26,23 +26,19 @@ const styles = {
   pageTitle: {
     fontSize: '1.5rem',
     fontWeight: '600',
-    color: '#1F2937',
     marginBottom: '1.5rem'
   },
   paymentCard: {
     borderRadius: '16px',
     border: 'none',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
     marginBottom: '1rem'
   },
   quickAmount: {
     padding: '12px 20px',
     borderRadius: '8px',
-    border: '1px solid #E5E7EB',
-    backgroundColor: '#FFFFFF',
+    border: '1px solid',
     margin: '0.25rem',
     fontWeight: '600',
-    color: '#6B7280',
     cursor: 'pointer'
   },
   quickAmountSelected: {
@@ -63,6 +59,7 @@ const styles = {
 
 function Payment() {
   const isMobile = window.innerWidth < 768
+  const { colors } = useTheme()
   const [amount, setAmount] = useState('')
   const [selectedQuickAmount, setSelectedQuickAmount] = useState(null)
   const [recipient, setRecipient] = useState('')
@@ -79,30 +76,45 @@ function Payment() {
   }
 
   return (
-    <div style={styles.paymentPage}>
+    <div style={{
+      ...styles.paymentPage,
+      backgroundColor: colors.bg.primary
+    }}>
       <DesktopNavbar />
 
       <Container style={{
         ...styles.mainContent,
         ...(isMobile ? styles.mainContentMobile : styles.mainContentDesktop)
       }}>
-        <h2 style={styles.pageTitle}>Send Payment</h2>
+        <h2 style={{
+          ...styles.pageTitle,
+          color: colors.text.primary
+        }}>Send Payment</h2>
 
-        <Card style={styles.paymentCard}>
+        <Card style={{
+          ...styles.paymentCard,
+          backgroundColor: colors.bg.card,
+          boxShadow: `0 4px 12px ${colors.isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.08)'}`
+        }}>
           <Card.Body className="p-4">
             <Form>
               <Form.Group className="mb-3">
-                <Form.Label>Recipient</Form.Label>
+                <Form.Label style={{ color: colors.text.primary }}>Recipient</Form.Label>
                 <Form.Control 
                   type="text" 
                   placeholder="Enter name or phone number"
                   value={recipient}
                   onChange={(e) => setRecipient(e.target.value)}
+                  style={{
+                    backgroundColor: colors.bg.tertiary,
+                    borderColor: colors.border.primary,
+                    color: colors.text.primary
+                  }}
                 />
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Amount (₹)</Form.Label>
+                <Form.Label style={{ color: colors.text.primary }}>Amount (₹)</Form.Label>
                 <Form.Control 
                   type="number" 
                   placeholder="Enter amount"
@@ -111,17 +123,25 @@ function Payment() {
                     setAmount(e.target.value)
                     setSelectedQuickAmount(null)
                   }}
+                  style={{
+                    backgroundColor: colors.bg.tertiary,
+                    borderColor: colors.border.primary,
+                    color: colors.text.primary
+                  }}
                 />
               </Form.Group>
 
               <div className="mb-3">
-                <Form.Label>Quick Amount</Form.Label>
+                <Form.Label style={{ color: colors.text.primary }}>Quick Amount</Form.Label>
                 <div className="d-flex flex-wrap">
                   {quickAmounts.map(value => (
                     <Button
                       key={value}
                       style={{
                         ...styles.quickAmount,
+                        borderColor: colors.border.primary,
+                        backgroundColor: colors.bg.secondary,
+                        color: colors.text.secondary,
                         ...(selectedQuickAmount === value ? styles.quickAmountSelected : {})
                       }}
                       onClick={() => handleQuickAmount(value)}
@@ -133,11 +153,16 @@ function Payment() {
               </div>
 
               <Form.Group className="mb-3">
-                <Form.Label>Description (Optional)</Form.Label>
+                <Form.Label style={{ color: colors.text.primary }}>Description (Optional)</Form.Label>
                 <Form.Control 
                   as="textarea" 
                   rows={2}
                   placeholder="What's this payment for?"
+                  style={{
+                    backgroundColor: colors.bg.tertiary,
+                    borderColor: colors.border.primary,
+                    color: colors.text.primary
+                  }}
                 />
               </Form.Group>
 
@@ -162,12 +187,20 @@ function Payment() {
           </Card.Body>
         </Card>
 
-        <Card style={styles.paymentCard}>
+        <Card style={{
+          ...styles.paymentCard,
+          backgroundColor: colors.bg.card,
+          boxShadow: `0 4px 12px ${colors.isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.08)'}`
+        }}>
           <Card.Body className="p-4">
-            <h5 className="mb-3">Recent Payments</h5>
+            <h5 className="mb-3" style={{ color: colors.text.primary }}>Recent Payments</h5>
             <div className="text-center py-4">
-              <i className="bi bi-clock-history" style={{ fontSize: '2rem', color: '#6B7280', marginBottom: '1rem' }}></i>
-              <p style={{ color: '#6B7280' }}>No recent payments</p>
+              <i className="bi bi-clock-history" style={{ 
+                fontSize: '2rem', 
+                color: colors.text.secondary, 
+                marginBottom: '1rem' 
+              }}></i>
+              <p style={{ color: colors.text.secondary }}>No recent payments</p>
             </div>
           </Card.Body>
         </Card>

@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Container, Button, Card } from 'react-bootstrap'
 import { navigationItems, isActivePath } from '../config/navigation'
 import CreateGroupModal from './CreateGroupModal'
+import { useTheme } from '../contexts/ThemeContext'
 import { useState } from 'react'
 
 const styles = {
@@ -10,8 +11,6 @@ const styles = {
     bottom: '0',
     left: '0',
     right: '0',
-    backgroundColor: '#FFFFFF',
-    borderTop: '1px solid #E5E7EB',
     zIndex: '1000'
   },
   bottomNavItem: {
@@ -130,6 +129,7 @@ const styles = {
 function BottomNavigation() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { colors } = useTheme()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showGroupModal, setShowGroupModal] = useState(false)
 
@@ -149,7 +149,11 @@ function BottomNavigation() {
 
   return (
     <>
-      <div style={styles.bottomNav} className="d-md-none">
+      <div style={{
+        ...styles.bottomNav,
+        backgroundColor: colors.bg.secondary,
+        borderTop: `1px solid ${colors.border.primary}`
+      }} className="d-md-none">
         <Container>
           <div className="d-flex justify-content-around align-items-center py-2">
             {navigationItems.map((navItem, index) => (
@@ -159,7 +163,8 @@ function BottomNavigation() {
                   variant="link" 
                   style={{
                     ...styles.bottomNavItem, 
-                    ...(isActivePath(location.pathname, navItem.path) ? styles.bottomNavItemActive : {})
+                    ...(isActivePath(location.pathname, navItem.path) ? styles.bottomNavItemActive : {}),
+                    color: isActivePath(location.pathname, navItem.path) ? '#22C55E' : colors.text.secondary
                   }}
                   onClick={() => navigate(navItem.path)}
                   onMouseEnter={(e) => {
@@ -169,7 +174,7 @@ function BottomNavigation() {
                   }}
                   onMouseLeave={(e) => {
                     if (!isActivePath(location.pathname, navItem.path)) {
-                      e.target.style.color = '#6B7280'
+                      e.target.style.color = colors.text.secondary
                     }
                   }}
                 >
@@ -194,13 +199,16 @@ function BottomNavigation() {
                     </Button>
                     <Button 
                       variant="link" 
-                      style={styles.bottomNavItem}
+                      style={{
+                        ...styles.bottomNavItem,
+                        color: colors.text.secondary
+                      }}
                       onClick={() => navigate('/payments')}
                       onMouseEnter={(e) => {
                         e.target.style.color = '#22C55E'
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.color = '#6B7280'
+                        e.target.style.color = colors.text.secondary
                       }}
                     >
                       <i className="bi bi-credit-card" style={styles.bottomNavIcon}></i>
@@ -227,20 +235,31 @@ function BottomNavigation() {
       <div 
         style={{
           ...styles.bottomSheet,
+          backgroundColor: colors.bg.secondary,
           ...(showCreateModal ? styles.bottomSheetVisible : {})
         }}
       >
-        <div style={styles.bottomSheetHandle}></div>
+        <div style={{
+          ...styles.bottomSheetHandle,
+          backgroundColor: colors.border.primary
+        }}></div>
         <div style={styles.bottomSheetHeader}>
-          <h4 style={styles.bottomSheetTitle}>Quick Actions</h4>
+          <h4 style={{
+            ...styles.bottomSheetTitle,
+            color: colors.text.primary
+          }}>Quick Actions</h4>
         </div>
 
         <Card 
-          style={styles.optionCard}
+          style={{
+            ...styles.optionCard,
+            backgroundColor: colors.bg.card,
+            border: `1px solid ${colors.border.secondary}`
+          }}
           onClick={handleCreateEvent}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)'
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)'
+            e.currentTarget.style.boxShadow = `0 4px 12px ${colors.isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.08)'}`
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)'
@@ -249,17 +268,27 @@ function BottomNavigation() {
         >
           <Card.Body className="p-4 text-center">
             <i className="bi bi-plus-circle" style={styles.optionIcon}></i>
-            <h5 style={styles.optionTitle}>Create New Event</h5>
-            <p style={styles.optionDescription}>Start a new group expense or event</p>
+            <h5 style={{
+              ...styles.optionTitle,
+              color: colors.text.primary
+            }}>Create New Event</h5>
+            <p style={{
+              ...styles.optionDescription,
+              color: colors.text.secondary
+            }}>Start a new group expense or event</p>
           </Card.Body>
         </Card>
 
         <Card 
-          style={styles.optionCard}
+          style={{
+            ...styles.optionCard,
+            backgroundColor: colors.bg.card,
+            border: `1px solid ${colors.border.secondary}`
+          }}
           onClick={handleJoinQR}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)'
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)'
+            e.currentTarget.style.boxShadow = `0 4px 12px ${colors.isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.08)'}`
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)'
@@ -268,8 +297,14 @@ function BottomNavigation() {
         >
           <Card.Body className="p-4 text-center">
             <i className="bi bi-qr-code-scan" style={styles.optionIcon}></i>
-            <h5 style={styles.optionTitle}>Join via QR</h5>
-            <p style={styles.optionDescription}>Scan QR code to join an existing event</p>
+            <h5 style={{
+              ...styles.optionTitle,
+              color: colors.text.primary
+            }}>Join via QR</h5>
+            <p style={{
+              ...styles.optionDescription,
+              color: colors.text.secondary
+            }}>Scan QR code to join an existing event</p>
           </Card.Body>
         </Card>
       </div>

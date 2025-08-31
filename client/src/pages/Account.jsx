@@ -2,11 +2,11 @@ import { Container, Card, Button, Row, Col, Form, Modal } from 'react-bootstrap'
 import { useState } from 'react'
 import DesktopNavbar from '../components/Navbar'
 import BottomNavigation from '../components/BottomNavigation'
+import { useTheme } from '../contexts/ThemeContext'
 
 const styles = {
   accountPage: {
-    minHeight: '100vh',
-    backgroundColor: '#F8FAFC'
+    minHeight: '100vh'
   },
   mainContent: {
     paddingTop: '2rem',
@@ -35,7 +35,6 @@ const styles = {
   profileCard: {
     borderRadius: '16px',
     border: 'none',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
     padding: '1.5rem',
     marginBottom: '1rem'
   },
@@ -71,12 +70,11 @@ const styles = {
   settingsCard: {
     borderRadius: '16px',
     border: 'none',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
     marginBottom: '1rem'
   },
   settingItem: {
     padding: '1rem 1.5rem',
-    borderBottom: '1px solid #F3F4F6',
+    borderBottom: '1px solid',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -95,7 +93,6 @@ const styles = {
   settingText: {
     flex: 1,
     margin: 0,
-    color: '#1F2937',
     fontWeight: '500'
   },
   settingArrow: {
@@ -119,6 +116,7 @@ const styles = {
 
 function Account() {
   const isMobile = window.innerWidth < 768
+  const { colors, toggleDarkMode, isDarkMode } = useTheme()
   const [darkMode, setDarkMode] = useState(false)
   const [notifications, setNotifications] = useState(true)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
@@ -146,57 +144,110 @@ function Account() {
     console.log('Logout user')
   }
 
+  const handleDarkModeToggle = (checked) => {
+    toggleDarkMode()
+  }
   return (
-    <div style={styles.accountPage}>
+    <div style={{
+      ...styles.accountPage,
+      backgroundColor: colors.bg.primary
+    }}>
       <DesktopNavbar />
 
       <Container style={{
         ...styles.mainContent,
         ...(isMobile ? styles.mainContentMobile : styles.mainContentDesktop)
       }}>
-        <h2 style={styles.pageTitle}>Account</h2>
+        <h2 style={{
+          ...styles.pageTitle,
+          color: colors.text.primary
+        }}>Account</h2>
 
         <div style={styles.profileSection}>
-          <Card style={styles.profileCard}>
+          <Card style={{
+            ...styles.profileCard,
+            backgroundColor: colors.bg.card,
+            boxShadow: `0 4px 12px ${colors.isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.08)'}`
+          }}>
             <div style={styles.profileHeader}>
               <div style={styles.userAvatar}>
                 JD
               </div>
               <div>
-                <h3 style={styles.userName}>John Doe</h3>
-                <p style={styles.userEmail}>john.doe@example.com</p>
+                <h3 style={{
+                  ...styles.userName,
+                  color: colors.text.primary
+                }}>John Doe</h3>
+                <p style={{
+                  ...styles.userEmail,
+                  color: colors.text.secondary
+                }}>john.doe@example.com</p>
               </div>
             </div>
           </Card>
         </div>
 
-        <Card style={styles.settingsCard}>
+        <Card style={{
+          ...styles.settingsCard,
+          backgroundColor: colors.bg.card,
+          boxShadow: `0 4px 12px ${colors.isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.08)'}`
+        }}>
           <div 
-            style={styles.settingItem}
+            style={{
+              ...styles.settingItem,
+              borderBottomColor: colors.border.secondary
+            }}
             onClick={() => handleSettingClick('password')}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#F8FAFC'}
+            onMouseEnter={(e) => e.target.style.backgroundColor = colors.bg.tertiary}
             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
-            <i className="bi bi-lock" style={styles.settingIcon}></i>
-            <p style={styles.settingText}>Change Password</p>
-            <i className="bi bi-chevron-right" style={styles.settingArrow}></i>
+            <i className="bi bi-lock" style={{
+              ...styles.settingIcon,
+              color: colors.text.secondary
+            }}></i>
+            <p style={{
+              ...styles.settingText,
+              color: colors.text.primary
+            }}>Change Password</p>
+            <i className="bi bi-chevron-right" style={{
+              ...styles.settingArrow,
+              color: colors.text.secondary
+            }}></i>
           </div>
           
-          <div style={styles.settingItem}>
-            <i className="bi bi-moon" style={styles.settingIcon}></i>
-            <p style={styles.settingText}>Dark Mode</p>
+          <div style={{
+            ...styles.settingItem,
+            borderBottomColor: colors.border.secondary
+          }}>
+            <i className="bi bi-moon" style={{
+              ...styles.settingIcon,
+              color: colors.text.secondary
+            }}></i>
+            <p style={{
+              ...styles.settingText,
+              color: colors.text.primary
+            }}>Dark Mode</p>
             <div style={styles.switchContainer}>
               <Form.Check 
                 type="switch"
-                checked={darkMode}
-                onChange={(e) => setDarkMode(e.target.checked)}
+                checked={isDarkMode}
+                onChange={(e) => handleDarkModeToggle(e.target.checked)}
               />
             </div>
           </div>
           
-          <div style={styles.settingItem}>
-            <i className="bi bi-bell" style={styles.settingIcon}></i>
-            <p style={styles.settingText}>Notifications</p>
+          <div style={{
+            ...styles.settingItem,
+            borderBottomColor: colors.border.secondary
+          }}>
+            <i className="bi bi-bell" style={{
+              ...styles.settingIcon,
+              color: colors.text.secondary
+            }}></i>
+            <p style={{
+              ...styles.settingText,
+              color: colors.text.primary
+            }}>Notifications</p>
             <div style={styles.switchContainer}>
               <Form.Check 
                 type="switch"
@@ -207,38 +258,80 @@ function Account() {
           </div>
           
           <div 
-            style={{...styles.settingItem, ...styles.settingItemLast}}
+            style={{
+              ...styles.settingItem, 
+              ...styles.settingItemLast,
+              borderBottomColor: colors.border.secondary
+            }}
             onClick={() => handleSettingClick('payments')}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#F8FAFC'}
+            onMouseEnter={(e) => e.target.style.backgroundColor = colors.bg.tertiary}
             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
-            <i className="bi bi-credit-card" style={styles.settingIcon}></i>
-            <p style={styles.settingText}>Payment History</p>
-            <i className="bi bi-chevron-right" style={styles.settingArrow}></i>
+            <i className="bi bi-credit-card" style={{
+              ...styles.settingIcon,
+              color: colors.text.secondary
+            }}></i>
+            <p style={{
+              ...styles.settingText,
+              color: colors.text.primary
+            }}>Payment History</p>
+            <i className="bi bi-chevron-right" style={{
+              ...styles.settingArrow,
+              color: colors.text.secondary
+            }}></i>
           </div>
         </Card>
 
-        <Card style={styles.settingsCard}>
+        <Card style={{
+          ...styles.settingsCard,
+          backgroundColor: colors.bg.card,
+          boxShadow: `0 4px 12px ${colors.isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.08)'}`
+        }}>
           <div 
-            style={styles.settingItem}
+            style={{
+              ...styles.settingItem,
+              borderBottomColor: colors.border.secondary
+            }}
             onClick={() => handleSettingClick('privacy')}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#F8FAFC'}
+            onMouseEnter={(e) => e.target.style.backgroundColor = colors.bg.tertiary}
             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
-            <i className="bi bi-shield-check" style={styles.settingIcon}></i>
-            <p style={styles.settingText}>Privacy & Security</p>
-            <i className="bi bi-chevron-right" style={styles.settingArrow}></i>
+            <i className="bi bi-shield-check" style={{
+              ...styles.settingIcon,
+              color: colors.text.secondary
+            }}></i>
+            <p style={{
+              ...styles.settingText,
+              color: colors.text.primary
+            }}>Privacy & Security</p>
+            <i className="bi bi-chevron-right" style={{
+              ...styles.settingArrow,
+              color: colors.text.secondary
+            }}></i>
           </div>
           
           <div 
-            style={{...styles.settingItem, ...styles.settingItemLast}}
+            style={{
+              ...styles.settingItem, 
+              ...styles.settingItemLast,
+              borderBottomColor: colors.border.secondary
+            }}
             onClick={() => handleSettingClick('help')}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#F8FAFC'}
+            onMouseEnter={(e) => e.target.style.backgroundColor = colors.bg.tertiary}
             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
-            <i className="bi bi-question-circle" style={styles.settingIcon}></i>
-            <p style={styles.settingText}>Help & Support</p>
-            <i className="bi bi-chevron-right" style={styles.settingArrow}></i>
+            <i className="bi bi-question-circle" style={{
+              ...styles.settingIcon,
+              color: colors.text.secondary
+            }}></i>
+            <p style={{
+              ...styles.settingText,
+              color: colors.text.primary
+            }}>Help & Support</p>
+            <i className="bi bi-chevron-right" style={{
+              ...styles.settingArrow,
+              color: colors.text.secondary
+            }}></i>
           </div>
         </Card>
 

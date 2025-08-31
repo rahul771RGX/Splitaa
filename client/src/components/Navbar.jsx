@@ -1,14 +1,13 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Navbar, Nav, Button } from 'react-bootstrap'
 import { navigationItems, isActivePath } from '../config/navigation'
+import { useTheme } from '../contexts/ThemeContext'
 
 const styles = {
   navbar: {
-    borderBottom: '1px solid #E5E7EB',
-    backgroundColor: '#FFFFFF'
+    borderBottom: '1px solid'
   },
   navLink: {
-    color: '#6B7280',
     textDecoration: 'none',
     padding: '8px 16px',
     borderRadius: '20px',
@@ -23,9 +22,7 @@ const styles = {
     backgroundColor: '#DCFCE7'
   },
   notificationBtn: {
-    border: '1px solid #E5E7EB',
-    color: '#6B7280',
-    background: '#FFFFFF',
+    border: '1px solid',
     borderRadius: '8px',
     width: '36px',
     height: '36px',
@@ -45,9 +42,14 @@ const styles = {
 function DesktopNavbar() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { colors } = useTheme()
 
   return (
-    <Navbar style={styles.navbar} className="px-4 py-3 shadow-sm d-none d-md-flex">
+    <Navbar style={{
+      ...styles.navbar,
+      backgroundColor: colors.bg.secondary,
+      borderBottomColor: colors.border.primary
+    }} className="px-4 py-3 shadow-sm d-none d-md-flex">
       <div className="container-fluid d-flex justify-content-between align-items-center" style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <Navbar.Brand style={styles.brandName}>Splitaa</Navbar.Brand>
         
@@ -57,18 +59,19 @@ function DesktopNavbar() {
               key={navItem.id}
               style={{
                 ...styles.navLink, 
-                ...(isActivePath(location.pathname, navItem.path) ? styles.navLinkActive : {})
+                ...(isActivePath(location.pathname, navItem.path) ? styles.navLinkActive : {}),
+                color: isActivePath(location.pathname, navItem.path) ? '#22C55E' : colors.text.secondary
               }}
               onClick={() => navigate(navItem.path)}
               onMouseEnter={(e) => {
                 if (!isActivePath(location.pathname, navItem.path)) {
                   e.target.style.color = '#22C55E'
-                  e.target.style.backgroundColor = theme.accent.lightGreen
+                  e.target.style.backgroundColor = colors.brand.light
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActivePath(location.pathname, navItem.path)) {
-                  e.target.style.color = theme.text.secondary
+                  e.target.style.color = colors.text.secondary
                   e.target.style.backgroundColor = 'transparent'
                 }
               }}
@@ -81,16 +84,21 @@ function DesktopNavbar() {
         <Button 
           variant="outline-secondary" 
           size="sm" 
-          style={styles.notificationBtn}
+          style={{
+            ...styles.notificationBtn,
+            borderColor: colors.border.primary,
+            color: colors.text.secondary,
+            backgroundColor: colors.bg.secondary
+          }}
           onMouseEnter={(e) => {
-            e.target.style.backgroundColor = theme.button.secondaryHover
+            e.target.style.backgroundColor = colors.bg.tertiary
             e.target.style.borderColor = '#22C55E'
             e.target.style.color = '#22C55E'
           }}
           onMouseLeave={(e) => {
-            e.target.style.backgroundColor = theme.bg.secondary
-            e.target.style.borderColor = theme.border.primary
-            e.target.style.color = theme.text.secondary
+            e.target.style.backgroundColor = colors.bg.secondary
+            e.target.style.borderColor = colors.border.primary
+            e.target.style.color = colors.text.secondary
           }}
         >
           <i className="bi bi-bell"></i>

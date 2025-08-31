@@ -1,5 +1,6 @@
 import { Button } from 'react-bootstrap'
 import CreateGroupModal from './CreateGroupModal'
+import { useTheme } from '../contexts/ThemeContext'
 import { useState } from 'react'
 
 const styles = {
@@ -12,7 +13,6 @@ const styles = {
     width: '80px',
     height: '80px',
     borderRadius: '50%',
-    backgroundColor: '#DCFCE7',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -32,14 +32,12 @@ const styles = {
   noEventsTitle: {
     fontSize: '1.5rem',
     fontWeight: '600',
-    color: '#1F2937',
     margin: '0 0 1rem 0'
   },
   noEventsTitleMobile: {
     fontSize: '1.25rem'
   },
   noEventsSubtitle: {
-    color: '#6B7280',
     fontSize: '1rem',
     margin: '0 0 1.5rem 0'
   },
@@ -55,14 +53,11 @@ const styles = {
     marginBottom: '1.5rem'
   },
   joinEventsText: {
-    color: '#6B7280',
     fontSize: '0.9rem',
     margin: '0 0 1rem 0'
   },
   btnScanQr: {
-    border: '1px solid #E5E7EB',
-    color: '#6B7280',
-    background: '#FFFFFF',
+    border: '1px solid',
     borderRadius: '12px',
     padding: '10px 20px',
     fontWeight: '500',
@@ -72,6 +67,7 @@ const styles = {
 
 function EmptyState() {
   const isMobile = window.innerWidth < 768
+  const { colors } = useTheme()
   const [showCreateModal, setShowCreateModal] = useState(false)
 
   return (
@@ -79,6 +75,7 @@ function EmptyState() {
       <div style={{...styles.noEventsSection, padding: isMobile ? '2rem 1rem' : '3rem 1rem'}}>
         <div style={{
           ...styles.emptyStateIcon,
+          backgroundColor: colors.brand.light,
           ...(isMobile ? styles.emptyStateIconMobile : {})
         }}>
           <i 
@@ -91,11 +88,15 @@ function EmptyState() {
         </div>
         <h3 style={{
           ...styles.noEventsTitle,
+          color: colors.text.primary,
           ...(isMobile ? styles.noEventsTitleMobile : {})
         }}>
           No event yet
         </h3>
-        <p style={styles.noEventsSubtitle}>
+        <p style={{
+          ...styles.noEventsSubtitle,
+          color: colors.text.secondary
+        }}>
           Create a new event to track and split your group costs
         </p>
         
@@ -116,20 +117,31 @@ function EmptyState() {
         </Button>
         
         <div>
-          <p style={{...styles.joinEventsText, fontSize: isMobile ? '0.85rem' : '0.9rem'}}>Or join events by</p>
+          <p style={{
+            ...styles.joinEventsText, 
+            color: colors.text.secondary,
+            fontSize: isMobile ? '0.85rem' : '0.9rem'
+          }}>Or join events by</p>
           <Button 
             variant="outline-secondary" 
-            style={{...styles.btnScanQr, padding: isMobile ? '8px 16px' : '10px 20px', fontSize: isMobile ? '0.85rem' : '1rem'}}
+            style={{
+              ...styles.btnScanQr, 
+              borderColor: colors.border.primary,
+              color: colors.text.secondary,
+              backgroundColor: colors.bg.secondary,
+              padding: isMobile ? '8px 16px' : '10px 20px', 
+              fontSize: isMobile ? '0.85rem' : '1rem'
+            }}
             onClick={() => alert('QR Scanner functionality coming soon!')}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#DCFCE7'
+              e.target.style.backgroundColor = colors.brand.light
               e.target.style.borderColor = '#22C55E'
               e.target.style.color = '#22C55E'
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#FFFFFF'
-              e.target.style.borderColor = '#E5E7EB'
-              e.target.style.color = '#6B7280'
+              e.target.style.backgroundColor = colors.bg.secondary
+              e.target.style.borderColor = colors.border.primary
+              e.target.style.color = colors.text.secondary
             }}
           >
             <i className="bi bi-qr-code me-2"></i>Scan event QR

@@ -3,11 +3,11 @@ import DesktopNavbar from '../components/Navbar'
 import BalanceCards from '../components/BalanceCards'
 import EmptyState from '../components/EmptyState'
 import BottomNavigation from '../components/BottomNavigation'
+import { useTheme } from '../contexts/ThemeContext'
 
 const styles = {
   homePage: {
-    minHeight: '100vh',
-    backgroundColor: '#F8FAFC'
+    minHeight: '100vh'
   },
   mainContent: {
     paddingTop: '2rem',
@@ -38,9 +38,13 @@ const styles = {
 
 function Home() {
   const isMobile = window.innerWidth < 768
+  const { colors } = useTheme()
 
   return (
-    <div style={styles.homePage}>
+    <div style={{
+      ...styles.homePage,
+      backgroundColor: colors.bg.primary
+    }}>
       <DesktopNavbar />
 
       <Container style={{
@@ -53,7 +57,7 @@ function Home() {
             variant="link" 
             style={styles.allTimeLink}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#DCFCE7'
+              e.target.style.backgroundColor = colors.brand.light
               e.target.style.color = '#22C55E'
             }}
             onMouseLeave={(e) => {
