@@ -1,5 +1,7 @@
 import { Container, Card, Button, Row, Col, Form, Modal } from 'react-bootstrap'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useUser, useClerk } from '@clerk/clerk-react'
 import DesktopNavbar from '../components/Navbar'
 import BottomNavigation from '../components/BottomNavigation'
 import { useTheme } from '../contexts/ThemeContext'
@@ -54,7 +56,14 @@ const styles = {
     marginRight: '1rem',
     fontSize: '1.5rem',
     color: '#FFFFFF',
-    fontWeight: '600'
+    fontWeight: '600',
+    overflow: 'hidden',
+    border: '3px solid #22C55E'
+  },
+  userAvatarImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover'
   },
   userName: {
     fontSize: '1.3rem',
@@ -116,10 +125,47 @@ const styles = {
 
 function Account() {
   const isMobile = window.innerWidth < 768
+  const navigate = useNavigate()
   const { colors, toggleDarkMode, isDarkMode } = useTheme()
+  const { user: clerkUser } = useUser()
+  const { signOut } = useClerk()
+  
+  const [userData, setUserData] = useState(null)
   const [darkMode, setDarkMode] = useState(false)
   const [notifications, setNotifications] = useState(true)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
+
+  // Load user data from localStorage or Clerk
+  useEffect(() => {
+    const loadUserData = () => {
+      // Try to get user data from localStorage first
+      const storedUser = localStorage.getItem('current_user')
+      
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser)
+          setUserData(parsedUser)
+          console.log('✅ User data loaded:', parsedUser)
+        } catch (error) {
+          console.error('Error parsing user data:', error)
+        }
+      }
+      
+      // If Clerk user is available, use that instead
+      if (clerkUser) {
+        const clerkUserData = {
+          name: clerkUser.fullName || `${clerkUser.firstName} ${clerkUser.lastName}` || 'User',
+          email: clerkUser.primaryEmailAddress?.emailAddress || 'user@example.com',
+          avatar: clerkUser.imageUrl,
+          clerkId: clerkUser.id
+        }
+        setUserData(clerkUserData)
+        console.log('✅ Clerk user data loaded:', clerkUserData)
+      }
+    }
+    
+    loadUserData()
+  }, [clerkUser])
 
   const handleSettingClick = (setting) => {
     switch(setting) {
@@ -140,13 +186,69 @@ function Account() {
     }
   }
 
-  const handleLogout = () => {
-    console.log('Logout user')
+  const handleLogout = async () => {
+    try {
+      console.log('🔓 Logging out...')
+      
+      // Clear localStorage
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('current_user')
+      localStorage.removeItem('clerk_user')
+      
+      // If Clerk user, sign out from Clerk
+      if (clerkUser) {
+        await signOut()
+        console.log('✅ Signed out from Clerk')
+      }
+      
+      console.log('✅ Logout successful')
+      
+      // Redirect to login
+      navigate('/login', { replace: true })
+    } catch (error) {
+      console.error('❌ Logout error:', error)
+      // Still redirect to login even if there's an error
+      navigate('/login', { replace: true })
+    }
   }
 
   const handleDarkModeToggle = (checked) => {
     toggleDarkMode()
   }
+
+  // Get user initials for avatar fallback
+  const getUserInitials = (name) => {
+    if (!name) return 'U'
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2)
+  }
+
+  // Show loading state while user data is being loaded
+  if (!userData) {
+    return (
+      <div style={{
+        ...styles.accountPage,
+        backgroundColor: colors.bg.primary,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div className="text-center">
+          <div className="spinner-border text-success" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p style={{ color: colors.text.secondary, marginTop: '1rem' }}>
+            Loading your account...
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{
       ...styles.accountPage,
@@ -171,17 +273,25 @@ function Account() {
           }}>
             <div style={styles.profileHeader}>
               <div style={styles.userAvatar}>
-                JD
+                {userData.avatar ? (
+                  <img 
+                    src={userData.avatar} 
+                    alt={userData.name}
+                    style={styles.userAvatarImage}
+                  />
+                ) : (
+                  getUserInitials(userData.name)
+                )}
               </div>
               <div>
                 <h3 style={{
                   ...styles.userName,
                   color: colors.text.primary
-                }}>John Doe</h3>
+                }}>{userData.name}</h3>
                 <p style={{
                   ...styles.userEmail,
                   color: colors.text.secondary
-                }}>john.doe@example.com</p>
+                }}>{userData.email}</p>
               </div>
             </div>
           </Card>

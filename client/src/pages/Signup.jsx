@@ -1,103 +1,75 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap'
 import { useTheme } from '../contexts/ThemeContext'
-import { loginUser } from '../services/api'
-import { useSignIn, useUser } from '@clerk/clerk-react'
+import { registerUser } from '../services/api'
+import { useSignUp } from '@clerk/clerk-react'
 
-function Login() {
+function Signup() {
   const { colors } = useTheme()
-  const { signIn, isLoaded: clerkLoaded } = useSignIn()
-  const { user, isSignedIn, isLoaded: userLoaded } = useUser()
+  const { signUp, isLoaded: clerkLoaded } = useSignUp()
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
-  // Check if user is already authenticated
-  useEffect(() => {
-    // Check Clerk authentication
-    if (userLoaded && isSignedIn && user) {
-      console.log('✅ User already signed in with Clerk, redirecting to home')
-      navigate('/home', { replace: true })
-      return
-    }
-
-    // Check backend authentication
-    const token = localStorage.getItem('auth_token')
-    const currentUser = localStorage.getItem('current_user')
-    
-    if (token && currentUser) {
-      console.log('✅ User already authenticated with backend, redirecting to home')
-      navigate('/home', { replace: true })
-    }
-  }, [userLoaded, isSignedIn, user, navigate])
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters')
+      return
+    }
+
     setLoading(true)
     
     try {
-      await loginUser(email, password)
+      await registerUser(name, email, password)
       navigate('/home')
       window.location.reload() // Reload to fetch user data
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.')
+      setError(err.message || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleKeyPress = (e, nextFieldId) => {
-    if (e.key === 'Enter' && nextFieldId) {
-      e.preventDefault()
-      document.getElementById(nextFieldId)?.focus()
-    }
-  }
-
-  const handleGoogleLogin = async () => {
-    if (!clerkLoaded || !signIn) {
+  const handleGoogleSignup = async () => {
+    if (!clerkLoaded || !signUp) {
       alert('Clerk is not configured. Please add VITE_CLERK_PUBLISHABLE_KEY to your .env file')
       return
     }
 
     try {
       setLoading(true)
-      
-      // Check if there's an existing Clerk session first
-      if (isSignedIn && user) {
-        console.log('✅ Already signed in with Clerk, redirecting...')
-        navigate('/home', { replace: true })
-        return
-      }
-      
-      await signIn.authenticateWithRedirect({
+      await signUp.authenticateWithRedirect({
         strategy: 'oauth_google',
         redirectUrl: '/sso-callback',
         redirectUrlComplete: '/home'
       })
     } catch (err) {
-      console.error('Google login error:', err)
-      setError('Google login failed. Please try again.')
+      console.error('Google signup error:', err)
+      setError('Google signup failed. Please try again.')
       setLoading(false)
     }
   }
 
   return (
-    <div className="login-page" style={{ backgroundColor: colors.bg.primary }}>
-      <Container fluid className="vh-100 d-flex align-items-center justify-content-center">
+    <div className="signup-page" style={{ backgroundColor: colors.bg.primary }}>
+      <Container fluid className="min-vh-100 d-flex align-items-center justify-content-center py-4">
         <Row className="w-100 justify-content-center">
-          <Col xs={12} sm={8} md={6} lg={4}>
-            <Card className="shadow-lg border-0 login-card" style={{
+          <Col xs={12} sm={10} md={8} lg={5}>
+            <Card className="shadow-lg border-0 signup-card" style={{
               backgroundColor: colors.bg.card,
               border: `1px solid ${colors.border.primary}`
             }}>
               <Card.Body className="p-5">
                 <div className="text-center mb-4">
                   <h1 className="brand-name">Splitaa</h1>
-                  <p style={{ color: colors.text.secondary }}>Split expenses with friends</p>
+                  <p style={{ color: colors.text.secondary }}>Create your account</p>
                 </div>
                 
                 <Form onSubmit={handleSubmit}>
@@ -108,16 +80,30 @@ function Login() {
                   )}
                   
                   <Form.Group className="mb-3">
+                    <Form.Label style={{ color: colors.text.primary }}>Full Name</Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="form-control-custom"
+                      style={{
+                        backgroundColor: colors.bg.tertiary,
+                        borderColor: colors.border.primary,
+                        color: colors.text.primary
+                      }}
+                    />
+                  </Form.Group>
+                  
+                  <Form.Group className="mb-3">
                     <Form.Label style={{ color: colors.text.primary }}>Email</Form.Label>
                     <Form.Control
-                      id="email-input"
                       type="email"
                       placeholder="Enter your email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      onKeyPress={(e) => handleKeyPress(e, 'password-input')}
                       required
-                      autoComplete="email"
                       className="form-control-custom"
                       style={{
                         backgroundColor: colors.bg.tertiary,
@@ -130,13 +116,12 @@ function Login() {
                   <Form.Group className="mb-4">
                     <Form.Label style={{ color: colors.text.primary }}>Password</Form.Label>
                     <Form.Control
-                      id="password-input"
                       type="password"
-                      placeholder="Enter your password"
+                      placeholder="Create a password (min 6 characters)"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      autoComplete="current-password"
+                      minLength={6}
                       className="form-control-custom"
                       style={{
                         backgroundColor: colors.bg.tertiary,
@@ -152,7 +137,7 @@ function Login() {
                     size="lg"
                     disabled={loading}
                   >
-                    {loading ? 'Logging in...' : 'Login'}
+                    {loading ? 'Creating Account...' : 'Sign Up'}
                   </Button>
                   
                   <div className="text-center mb-3">
@@ -163,7 +148,7 @@ function Login() {
                     variant="outline-light"
                     className="w-100 mb-3 d-flex align-items-center justify-content-center"
                     size="lg"
-                    onClick={handleGoogleLogin}
+                    onClick={handleGoogleSignup}
                     style={{
                       borderColor: colors.border.primary,
                       color: colors.text.primary,
@@ -176,12 +161,12 @@ function Login() {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    Login with Google
+                    Sign up with Google
                   </Button>
                   
                   <div className="text-center">
                     <small style={{ color: colors.text.secondary }}>
-                      Don't have an account? <Link to="/signup" className="text-success">Sign up</Link>
+                      Already have an account? <Link to="/login" className="text-success">Login</Link>
                     </small>
                   </div>
                 </Form>
@@ -194,4 +179,4 @@ function Login() {
   )
 }
 
-export default Login
+export default Signup

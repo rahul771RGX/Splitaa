@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Modal, Form, Button, InputGroup } from 'react-bootstrap'
 import { useTheme } from '../contexts/ThemeContext'
+import { createGroup } from '../services/api'
+import { useNavigate } from 'react-router-dom'
 
 const styles = {
   modalHeader: {
@@ -97,47 +99,46 @@ const styles = {
 
 function CreateGroupModal({ show, onHide }) {
   const { colors } = useTheme()
+  const navigate = useNavigate()
   const [groupName, setGroupName] = useState('')
   const [groupDescription, setGroupDescription] = useState('')
-  const [members, setMembers] = useState([
-    { id: 1, name: 'You', email: 'you@example.com', isOwner: true }
-  ])
-  const [newMemberName, setNewMemberName] = useState('')
-  const [newMemberEmail, setNewMemberEmail] = useState('')
-  const [showAddMember, setShowAddMember] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleAddMember = () => {
-    if (newMemberName && newMemberEmail) {
-      const newMember = {
-        id: Date.now(),
-        name: newMemberName,
-        email: newMemberEmail,
-        isOwner: false
-      }
-      setMembers([...members, newMember])
-      setNewMemberName('')
-      setNewMemberEmail('')
-      setShowAddMember(false)
-    }
-  }
-
-  const handleRemoveMember = (memberId) => {
-    setMembers(members.filter(member => member.id !== memberId))
-  }
-
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (groupName.trim()) {
-      console.log('Creating group:', {
-        name: groupName,
-        description: groupDescription,
-        members: members
-      })
+      setIsCreating(true)
+      setError('')
       
-      setGroupName('')
-      setGroupDescription('')
-      setMembers([{ id: 1, name: 'You', email: 'you@example.com', isOwner: true }])
-      setShowAddMember(false)
-      onHide()
+      try {
+        const groupData = {
+          name: groupName,
+          description: groupDescription,
+          members: [] // Empty array - backend will add creator automatically
+        }
+        
+        console.log('Creating group:', groupData)
+        
+        const result = await createGroup(groupData)
+        console.log('✅ Group created successfully:', result)
+        
+        // Reset form
+        setGroupName('')
+        setGroupDescription('')
+        setIsCreating(false)
+        
+        // Close modal
+        onHide()
+        
+        // Optionally navigate to groups page or refresh
+        // navigate('/groups')
+        // Or trigger a refresh of the groups list
+        window.location.reload() // Simple way to refresh and show new group
+      } catch (err) {
+        console.error('❌ Error creating group:', err)
+        setError(err.message || 'Failed to create group. Please try again.')
+        setIsCreating(false)
+      }
     }
   }
 
@@ -171,6 +172,18 @@ function CreateGroupModal({ show, onHide }) {
         </Modal.Header>
         
         <Modal.Body className="p-4" style={{ backgroundColor: colors.bg.card }}>
+          {error && (
+            <div style={{
+              padding: '12px',
+              backgroundColor: '#fee2e2',
+              color: '#dc2626',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
+          )}
           <Form>
             <Form.Group className="mb-3">
               <Form.Label style={{
@@ -199,14 +212,14 @@ function CreateGroupModal({ show, onHide }) {
               />
             </Form.Group>
 
-            <Form.Group className="mb-4">
+            <Form.Group className="mb-3">
               <Form.Label style={{
                 ...styles.formLabel,
                 color: colors.text.primary
               }}>Description (Optional)</Form.Label>
               <Form.Control
                 as="textarea"
-                rows={2}
+                rows={3}
                 placeholder="Add a description for your group"
                 value={groupDescription}
                 onChange={(e) => setGroupDescription(e.target.value)}
@@ -227,139 +240,7 @@ function CreateGroupModal({ show, onHide }) {
               />
             </Form.Group>
 
-            <div className="mb-3">
-              <Form.Label style={{
-                ...styles.formLabel,
-                color: colors.text.primary
-              }}>Members ({members.length})</Form.Label>
-              
-              {members.map(member => (
-                <div key={member.id} style={{
-                  ...styles.memberItem,
-                  backgroundColor: colors.bg.tertiary,
-                  borderColor: colors.border.primary
-                }}>
-                  <div>
-                    <p style={{
-                      ...styles.memberName,
-                      color: colors.text.primary
-                    }}>
-                      {member.name} {member.isOwner && '(You)'}
-                    </p>
-                    <p style={{
-                      ...styles.memberEmail,
-                      color: colors.text.secondary
-                    }}>{member.email}</p>
-                  </div>
-                  {!member.isOwner && (
-                    <button
-                      style={styles.removeButton}
-                      onClick={() => handleRemoveMember(member.id)}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = '#FEE2E2'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = 'transparent'
-                      }}
-                    >
-                      <i className="bi bi-trash"></i>
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              {showAddMember ? (
-                <div style={{ 
-                  ...styles.memberItem, 
-                  backgroundColor: colors.bg.tertiary,
-                  borderColor: colors.border.primary,
-                  flexDirection: 'column', 
-                  alignItems: 'stretch' 
-                }}>
-                  <Form.Control
-                    type="text"
-                    placeholder="Member name"
-                    value={newMemberName}
-                    onChange={(e) => setNewMemberName(e.target.value)}
-                    className="mb-2"
-                    style={{ 
-                      ...styles.formControl, 
-                      marginBottom: '0.5rem',
-                      borderColor: colors.border.primary,
-                      backgroundColor: colors.bg.secondary,
-                      color: colors.text.primary
-                    }}
-                  />
-                  <Form.Control
-                    type="email"
-                    placeholder="Member email"
-                    value={newMemberEmail}
-                    onChange={(e) => setNewMemberEmail(e.target.value)}
-                    className="mb-2"
-                    style={{ 
-                      ...styles.formControl, 
-                      marginBottom: '0.5rem',
-                      borderColor: colors.border.primary,
-                      backgroundColor: colors.bg.secondary,
-                      color: colors.text.primary
-                    }}
-                  />
-                  <div className="d-flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={handleAddMember}
-                      style={{
-                        backgroundColor: '#22C55E',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontWeight: '500'
-                      }}
-                    >
-                      Add
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline-secondary"
-                      onClick={() => {
-                        setShowAddMember(false)
-                        setNewMemberName('')
-                        setNewMemberEmail('')
-                      }}
-                      style={{
-                        borderRadius: '6px',
-                        fontWeight: '500',
-                        borderColor: colors.border.primary,
-                        color: colors.text.secondary
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  style={{
-                    ...styles.addMemberButton,
-                    backgroundColor: colors.bg.tertiary,
-                    borderColor: colors.border.primary,
-                    color: colors.text.secondary
-                  }}
-                  onClick={() => setShowAddMember(true)}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = colors.border.secondary
-                    e.target.style.borderColor = '#22C55E'
-                    e.target.style.color = '#22C55E'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = colors.bg.tertiary
-                    e.target.style.borderColor = colors.border.primary
-                    e.target.style.color = colors.text.secondary
-                  }}
-                >
-                  <i className="bi bi-plus-lg me-2"></i>Add Member
-                </button>
-              )}
-            </div>
+           
           </Form>
         </Modal.Body>
 
@@ -386,7 +267,7 @@ function CreateGroupModal({ show, onHide }) {
           <Button
             style={styles.createButton}
             onClick={handleCreateGroup}
-            disabled={!groupName.trim()}
+            disabled={!groupName.trim() || isCreating}
             onMouseEnter={(e) => {
               if (!e.target.disabled) {
                 e.target.style.backgroundColor = '#16A34A'
@@ -398,7 +279,7 @@ function CreateGroupModal({ show, onHide }) {
               }
             }}
           >
-            Create Group
+            {isCreating ? 'Creating...' : 'Create Group'}
           </Button>
         </Modal.Footer>
       </div>

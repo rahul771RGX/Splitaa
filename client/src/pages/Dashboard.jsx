@@ -2,22 +2,20 @@ import React from 'react';
 import { useExpenses } from '../context/ExpensesContext';
 import { calculateBalances } from '../services/calculations';
 import { Link } from 'react-router-dom';
-import { TrendingUp, TrendingDown, Calendar, ChevronRight, Plus, QrCode } from 'lucide-react';
+import { currentUser } from '../data/mockData';
 
 const Dashboard = () => {
   const { state } = useExpenses();
   const { expenses, friends } = state;
 
-  const balances = calculateBalances(expenses, friends);
+  // Include current user in the friends list for balance calculation
+  const allUsers = [currentUser, ...friends];
+  const balances = calculateBalances(expenses, allUsers);
   
   // Calculate total amounts you owe and are owed
-  const totalOwed = Object.values(balances).reduce((sum, data) => {
-    return data.balance < 0 ? sum + Math.abs(data.balance) : sum;
-  }, 0);
-  
-  const totalOwedToYou = Object.values(balances).reduce((sum, data) => {
-    return data.balance > 0 ? sum + data.balance : sum;
-  }, 0);
+  const currentUserBalance = balances[currentUser.id] || { balance: 0 };
+  const totalOwed = currentUserBalance.balance < 0 ? Math.abs(currentUserBalance.balance) : 0;
+  const totalOwedToYou = currentUserBalance.balance > 0 ? currentUserBalance.balance : 0;
 
   return (
     <div className="main-content">
@@ -32,7 +30,7 @@ const Dashboard = () => {
                 <div className="balance-label balance-label-dark">You owe</div>
               </div>
               <div className="balance-icon-container balance-icon-dark">
-                <TrendingUp size={32} />
+                <i className="bi bi-arrow-up-circle" style={{ fontSize: '32px' }}></i>
               </div>
             </div>
           </div>
@@ -44,19 +42,13 @@ const Dashboard = () => {
                 <div className="balance-label balance-label-teal">You are owed</div>
               </div>
               <div className="balance-icon-container balance-icon-teal">
-                <TrendingDown size={32} />
+                <i className="bi bi-arrow-down-circle" style={{ fontSize: '32px' }}></i>
               </div>
             </div>
           </div>
         </div>
 
-        {/* All Time Link */}
-        <div className="all-time-container">
-          <Link to="/expenses" className="all-time-link">
-            <span>All time</span>
-            <ChevronRight size={20} />
-          </Link>
-        </div>
+        {/* All Time Link - Removed */}
       </div>
 
       {/* Empty State */}
@@ -64,7 +56,7 @@ const Dashboard = () => {
         <div className="empty-state-container">
           <div className="empty-state-icon">
             <div className="empty-state-icon-inner">
-              <Calendar size={48} />
+              <i className="bi bi-calendar-event" style={{ fontSize: '48px' }}></i>
             </div>
           </div>
           
@@ -72,19 +64,7 @@ const Dashboard = () => {
           <p className="empty-state-description">Create a new event to track and split your group costs</p>
           
           <div className="button-container">
-            <Link to="/expenses/add">
-              <button className="btn-create-event">
-                <Plus size={24} />
-                <span>Create new event</span>
-              </button>
-            </Link>
-            
-            <p className="qr-divider">Or join events by</p>
-            
-            <button className="btn-qr">
-              <QrCode size={24} />
-              <span>Scan event QR</span>
-            </button>
+            <p className="empty-state-description">Use Groups to track and split expenses with friends</p>
           </div>
         </div>
       </div>

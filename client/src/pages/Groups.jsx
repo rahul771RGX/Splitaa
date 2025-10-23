@@ -3,8 +3,10 @@ import DesktopNavbar from '../components/Navbar'
 import BottomNavigation from '../components/BottomNavigation'
 import CreateGroupModal from '../components/CreateGroupModal'
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
+import { useExpenses } from '../context/ExpensesContext'
+import { deleteGroup } from '../services/api'
 
 const styles = {
   groupsPage: {
@@ -115,7 +117,10 @@ const styles = {
 
 function Groups() {
   const isMobile = window.innerWidth < 768
+  const navigate = useNavigate()
   const { colors } = useTheme()
+  const { state } = useExpenses()
+  const { groups } = state
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -127,37 +132,6 @@ function Groups() {
     }
   }, [searchParams, setSearchParams])
 
-  const groups = [
-    {
-      id: 1,
-      name: 'Weekend Trip',
-      members: ['You', 'John', 'Sarah', 'Mike'],
-      balance: 250.50,
-      type: 'owed' 
-    },
-    {
-      id: 2,
-      name: 'Office Lunch',
-      members: ['You', 'Alice', 'Bob', 'Carol', 'David'],
-      balance: -120.25,
-      type: 'owe' 
-    },
-    {
-      id: 3,
-      name: 'Roommate Expenses',
-      members: ['You', 'Alex'],
-      balance: 0,
-      type: 'settled'
-    },
-    {
-      id: 4,
-      name: 'Birthday Party',
-      members: ['You', 'Emma', 'James', 'Lisa'],
-      balance: 75.00,
-      type: 'owed'
-    }
-  ]
-
   const getBalanceColor = (balance, type) => {
     if (balance === 0) return styles.neutralBalance
     if (type === 'owed') return styles.positiveBalance
@@ -168,6 +142,24 @@ function Groups() {
     if (balance === 0) return 'Settled up'
     if (type === 'owed') return `You are owed ₹${balance.toFixed(2)}`
     return `You owe ₹${Math.abs(balance).toFixed(2)}`
+  }
+
+  const handleDeleteGroup = async (groupId, groupName) => {
+    const confirmed = window.confirm(`Are you sure you want to delete "${groupName}"? This will delete all expenses in this group. This action cannot be undone.`)
+    
+    if (!confirmed) return
+    
+    try {
+      console.log('Deleting group:', groupId)
+      await deleteGroup(groupId)
+      console.log('✅ Group deleted successfully')
+      
+      // Refresh the page to show updated groups list
+      window.location.reload()
+    } catch (error) {
+      console.error('❌ Error deleting group:', error)
+      alert('Failed to delete group: ' + (error.message || 'Unknown error'))
+    }
   }
 
   return (
@@ -222,14 +214,14 @@ function Groups() {
               >
                 <Card.Body className="p-4">
                   <div style={styles.groupHeader}>
-                    <div className="d-flex align-items-center">
+                    <div className="d-flex align-items-center flex-grow-1">
                       <div style={{
                         ...styles.groupIcon,
                         backgroundColor: colors.brand.light
                       }}>
                         <i className="bi bi-people" style={{ color: '#22C55E', fontSize: '1.2rem' }}></i>
                       </div>
-                      <div>
+                      <div className="flex-grow-1">
                         <h5 style={{
                           ...styles.groupName,
                           color: colors.text.primary
@@ -238,10 +230,37 @@ function Groups() {
                           ...styles.groupMembers,
                           color: colors.text.secondary
                         }}>
-                          {group.members.length} members: {group.members.join(', ')}
+                          {group.memberNames ? group.memberNames.length : group.members.length} members: {group.memberNames ? group.memberNames.join(', ') : group.members.join(', ')}
                         </p>
                       </div>
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteGroup(group.id, group.name)
+                      }}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#ef4444',
+                        cursor: 'pointer',
+                        padding: '8px',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = colors.isDarkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.1)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = 'transparent'
+                      }}
+                      title="Delete group"
+                    >
+                      <i className="bi bi-trash" style={{ fontSize: '1.1rem' }}></i>
+                    </button>
                   </div>
                   
                   <div style={styles.balanceSection}>
@@ -255,20 +274,19 @@ function Groups() {
                         {getBalanceText(group.balance, group.type)}
                       </span>
                     </div>
-                    {group.balance !== 0 && (
-                      <Button 
-                        size="sm" 
-                        style={styles.settleButton}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = '#16A34A'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = '#22C55E'
-                        }}
-                      >
-                        Settle Up
-                      </Button>
-                    )}
+                    <Button 
+                      size="sm" 
+                      style={styles.settleButton}
+                      onClick={() => navigate(`/group-details?groupId=${group.id}`)}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = '#16A34A'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = '#22C55E'
+                      }}
+                    >
+                      View Details
+                    </Button>
                   </div>
                 </Card.Body>
               </Card>

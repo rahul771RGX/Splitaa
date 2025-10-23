@@ -1,5 +1,8 @@
 import { Row, Col, Card } from 'react-bootstrap'
 import { useTheme } from '../contexts/ThemeContext'
+import { useExpenses } from '../context/ExpensesContext'
+import { calculateBalances } from '../services/calculations'
+import { currentUser } from '../data/mockData'
 
 const styles = {
   balanceCard: {
@@ -37,6 +40,23 @@ const styles = {
 function BalanceCards() {
   const isMobile = window.innerWidth < 768
   const { colors } = useTheme()
+  const { state } = useExpenses()
+  const { expenses, friends } = state
+
+  // Include current user in the friends list for balance calculation
+  const allUsers = [currentUser, ...friends]
+  
+  // Calculate balances for all friends
+  const balances = calculateBalances(expenses, allUsers)
+  
+  // Calculate total amounts you owe and are owed
+  // For current user (id: 1)
+  const currentUserBalance = balances[currentUser.id] || { balance: 0 }
+  
+  // If balance is negative, you owe money
+  // If balance is positive, you are owed money
+  const totalOwed = currentUserBalance.balance < 0 ? Math.abs(currentUserBalance.balance) : 0
+  const totalOwedToYou = currentUserBalance.balance > 0 ? currentUserBalance.balance : 0
 
   return (
     <Row className={`justify-content-center mb-4 ${isMobile ? 'mx-2' : ''}`}>
@@ -56,7 +76,7 @@ function BalanceCards() {
         >
           <Card.Body className={`d-flex align-items-center justify-content-between ${isMobile ? 'p-3' : 'p-4'}`}>
             <div>
-              <h2 style={{...styles.balanceAmount, fontSize: isMobile ? '1.5rem' : '2rem'}}>₹0</h2>
+              <h2 style={{...styles.balanceAmount, fontSize: isMobile ? '1.5rem' : '2rem'}}>₹{totalOwed.toFixed(2)}</h2>
               <p style={{...styles.balanceLabel, fontSize: isMobile ? '0.8rem' : '0.9rem'}}>You owe</p>
             </div>
             {!isMobile && <div>
@@ -81,7 +101,7 @@ function BalanceCards() {
         >
           <Card.Body className={`d-flex align-items-center justify-content-between ${isMobile ? 'p-3' : 'p-4'}`}>
             <div>
-              <h2 style={{...styles.balanceAmount, fontSize: isMobile ? '1.5rem' : '2rem'}}>₹0</h2>
+              <h2 style={{...styles.balanceAmount, fontSize: isMobile ? '1.5rem' : '2rem'}}>₹{totalOwedToYou.toFixed(2)}</h2>
               <p style={{...styles.balanceLabel, fontSize: isMobile ? '0.8rem' : '0.9rem'}}>You are owed</p>
             </div>
             {!isMobile && <div>

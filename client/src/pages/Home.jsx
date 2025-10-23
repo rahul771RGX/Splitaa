@@ -1,9 +1,13 @@
 import { Container, Button } from 'react-bootstrap'
+import { useNavigate } from 'react-router-dom'
+import { useUser } from '@clerk/clerk-react'
+import { useEffect } from 'react'
 import DesktopNavbar from '../components/Navbar'
 import BalanceCards from '../components/BalanceCards'
 import EmptyState from '../components/EmptyState'
 import BottomNavigation from '../components/BottomNavigation'
 import { useTheme } from '../contexts/ThemeContext'
+import { useExpenses } from '../context/ExpensesContext'
 
 const styles = {
   homePage: {
@@ -38,7 +42,35 @@ const styles = {
 
 function Home() {
   const isMobile = window.innerWidth < 768
+  const navigate = useNavigate()
   const { colors } = useTheme()
+  const { user, isLoaded } = useUser()
+  const { state } = useExpenses()
+
+  // Check authentication - redirect to login if not authenticated
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('auth_token')
+      const currentUser = localStorage.getItem('current_user')
+      
+      // If Clerk is loaded and no user, and no backend auth token, redirect
+      if (isLoaded && !user && !token) {
+        console.log('⚠️ No authentication found, redirecting to login')
+        navigate('/login', { replace: true })
+        return
+      }
+      
+      // If we have either Clerk user OR backend token, we're good
+      if (user || token) {
+        console.log('✅ User authenticated:', user?.primaryEmailAddress?.emailAddress || 'Backend user')
+      }
+    }
+    
+    // Only check after Clerk is loaded
+    if (isLoaded) {
+      checkAuth()
+    }
+  }, [isLoaded, user, navigate])
 
   return (
     <div style={{

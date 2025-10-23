@@ -29,8 +29,8 @@ const Navigation = () => {
                 </Nav.Link>
               </LinkContainer>
               
-              <LinkContainer to="/friends">
-                <Nav.Link className={location.pathname === '/friends' ? 'active' : ''}>
+              <LinkContainer to="/groups">
+                <Nav.Link className={location.pathname === '/groups' ? 'active' : ''}>
                   <Users size={20} />
                   Groups
                 </Nav.Link>
@@ -49,10 +49,10 @@ const Navigation = () => {
                 <Bell size={20} />
               </Button>
               
-              <LinkContainer to="/events/add">
+              <LinkContainer to="/groups">
                 <Button className="btn-create-event">
                   <Plus size={16} />
-                  Create Event
+                  Create Group
                 </Button>
               </LinkContainer>
             </div>
@@ -81,14 +81,14 @@ const Navigation = () => {
           </div>
         </LinkContainer>
         
-        <LinkContainer to="/friends">
-          <div className={`mobile-nav-item ${location.pathname === '/friends' ? 'active' : ''}`}>
+        <LinkContainer to="/groups">
+          <div className={`mobile-nav-item ${location.pathname === '/groups' ? 'active' : ''}`}>
             <Users size={24} />
             <span>Groups</span>
           </div>
         </LinkContainer>
         
-        <LinkContainer to="/events/add">
+        <LinkContainer to="/groups">
           <div className="mobile-nav-item mobile-nav-add">
             <Plus size={28} />
           </div>

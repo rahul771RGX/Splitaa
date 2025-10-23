@@ -36,10 +36,11 @@ export const calculateSettlements = (balances) => {
 
   // Separate creditors and debtors
   Object.entries(balances).forEach(([id, data]) => {
+    const numericId = parseInt(id); // Convert string ID to number
     if (data.balance > 0.01) {
-      creditors.push({ id, name: data.name, amount: data.balance });
+      creditors.push({ id: numericId, name: data.name, amount: data.balance });
     } else if (data.balance < -0.01) {
-      debtors.push({ id, name: data.name, amount: Math.abs(data.balance) });
+      debtors.push({ id: numericId, name: data.name, amount: Math.abs(data.balance) });
     }
   });
 
