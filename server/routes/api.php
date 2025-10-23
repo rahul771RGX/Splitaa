@@ -5,6 +5,7 @@ require_once __DIR__ . '/../app/Controllers/ExpenseController.php';
 require_once __DIR__ . '/../app/Controllers/GroupController.php';
 require_once __DIR__ . '/../app/Controllers/FriendController.php';
 require_once __DIR__ . '/../app/Controllers/SettlementController.php';
+require_once __DIR__ . '/../app/Controllers/PaymentMethodController.php';
 
 function handleRequest($uri, $method) {
     // Remove query string
@@ -136,6 +137,35 @@ function handleRequest($uri, $method) {
                 $controller->store();
             } else {
                 Response::notFound('Settlement endpoint not found');
+            }
+        }
+        
+        // Payment Methods routes
+        elseif ($resource === 'payment-methods') {
+            $controller = new PaymentMethodController();
+            
+            if ($method === 'GET' && !$id) {
+                $controller->index();
+            } elseif ($method === 'POST' && !$id) {
+                $controller->store();
+            } elseif ($method === 'PUT' && $id && $action === 'set-primary') {
+                $controller->setPrimary($id);
+            } elseif ($method === 'PUT' && $id) {
+                $controller->update($id);
+            } elseif ($method === 'DELETE' && $id) {
+                $controller->delete($id);
+            } else {
+                Response::notFound('Payment method endpoint not found');
+            }
+        }
+        
+        // Get user's payment methods (for paying them)
+        elseif ($resource === 'users' && $id && $action === 'payment-methods') {
+            $controller = new PaymentMethodController();
+            if ($method === 'GET') {
+                $controller->getUserPaymentMethods($id);
+            } else {
+                Response::notFound('User payment methods endpoint not found');
             }
         }
         

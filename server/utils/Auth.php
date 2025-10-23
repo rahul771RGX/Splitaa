@@ -72,6 +72,48 @@ class Auth {
         return $payload ? $payload['user_id'] : null;
     }
     
+    public static function getUser() {
+        $headers = getallheaders();
+        $token = null;
+        
+        if (isset($headers['Authorization'])) {
+            $token = str_replace('Bearer ', '', $headers['Authorization']);
+        }
+        
+        if (!$token) {
+            return null;
+        }
+        
+        // Connect to database
+        require_once __DIR__ . '/../config/database.php';
+        $db = Database::getInstance();
+        $conn = $db->getConnection();
+        
+        // Check if it's a Clerk token (format: clerk_user_xxxxx)
+        if (strpos($token, 'clerk_user_') === 0) {
+            $clerkId = $token;
+            // Find user by clerk_id or email
+            $stmt = $conn->prepare("SELECT * FROM users WHERE email LIKE ? LIMIT 1");
+            $email = '%clerk%';
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
+            return $user;
+        }
+        
+        // Regular JWT token validation
+        $payload = self::validateToken($token);
+        if (!$payload || !isset($payload['user_id'])) {
+            return null;
+        }
+        
+        // Fetch user from database
+        $stmt = $conn->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
+        $stmt->execute([$payload['user_id']]);
+        $user = $stmt->fetch();
+        
+        return $user;
+    }
+    
     public static function getOrCreateClerkUser($clerkId, $userData = []) {
         $db = Database::getInstance()->getConnection();
         
