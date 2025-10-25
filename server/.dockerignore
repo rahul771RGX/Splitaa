@@ -1,0 +1,25 @@
+# Git files
+.git
+.gitignore
+
+# Documentation
+*.md
+README.md
+
+# IDE
+.vscode
+.idea
+
+# Tests
+tests/
+*.test.php
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# App Engine specific (not needed for Cloud Run)
+app.yaml
