@@ -1,0 +1,24 @@
+# App Engine configuration with secrets
+app.yaml
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Vendor directory (if using Composer)
+vendor/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
