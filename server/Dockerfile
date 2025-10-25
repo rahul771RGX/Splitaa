@@ -4,8 +4,8 @@ FROM php:8.2-apache
 # Install PDO MySQL extension
 RUN docker-php-ext-install pdo pdo_mysql
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# Enable Apache mod_rewrite and mod_headers
+RUN a2enmod rewrite headers
 
 # Copy application files
 COPY . /var/www/html/
