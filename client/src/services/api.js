@@ -128,6 +128,8 @@ export const deleteGroup = async (id) => {
 };
 
 // ===== Expenses =====
+export const getAllExpenses = async () => await apiRequest('/expenses');
+
 export const getGroupExpenses = async (groupId) => await apiRequest(`/groups/${groupId}/expenses`);
 
 export const createExpense = async (expenseData) => {
@@ -189,9 +191,41 @@ export const getCategories = async () => {
     { id: 5, name: 'Utilities', icon: '💡' },
     { id: 6, name: 'Rent', icon: '🏠' },
     { id: 7, name: 'Healthcare', icon: '⚕️' },
-    { id: 8, name: 'Travel', icon: '✈️' },
-    { id: 9, name: 'Other', icon: '📦' },
+    { id: 8, name: 'Other', icon: '📦' },
   ]);
+};
+
+// ===== Payment Methods =====
+export const getPaymentMethods = async () => await apiRequest('/payment-methods');
+
+export const createPaymentMethod = async (methodData) => {
+  return await apiRequest('/payment-methods', {
+    method: 'POST',
+    body: JSON.stringify(methodData),
+  });
+};
+
+export const updatePaymentMethod = async (id, methodData) => {
+  return await apiRequest(`/payment-methods/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(methodData),
+  });
+};
+
+export const deletePaymentMethod = async (id) => {
+  return await apiRequest(`/payment-methods/${id}`, {
+    method: 'DELETE',
+  });
+};
+
+export const setPrimaryPaymentMethod = async (id) => {
+  return await apiRequest(`/payment-methods/${id}/set-primary`, {
+    method: 'PUT',
+  });
+};
+
+export const getUserPaymentMethods = async (userId) => {
+  return await apiRequest(`/users/${userId}/payment-methods`);
 };
 
 // Default export for backward compatibility
@@ -206,6 +240,7 @@ export default {
   createGroup,
   addGroupMember,
   deleteGroup,
+  getAllExpenses,
   getGroupExpenses,
   createExpense,
   updateExpense,
@@ -217,4 +252,10 @@ export default {
   createSettlement,
   calculateBalances,
   getCategories,
+  getPaymentMethods,
+  createPaymentMethod,
+  updatePaymentMethod,
+  deletePaymentMethod,
+  setPrimaryPaymentMethod,
+  getUserPaymentMethods,
 };

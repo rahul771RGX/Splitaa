@@ -180,9 +180,9 @@ class GroupController {
             Response::notFound('Group not found');
         }
         
-        // Check if user is the creator or admin
-        if ($group['created_by'] != $userId && !$this->groupModel->isAdmin($id, $userId)) {
-            Response::error('Only the group creator or admin can delete this group', 403);
+        // Only group admin/host can delete the group
+        if (!$this->groupModel->isAdmin($id, $userId)) {
+            Response::error('Only the group host can delete this group', 403);
         }
         
         // Delete the group (will cascade delete members and expenses)

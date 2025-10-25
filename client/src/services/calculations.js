@@ -2,27 +2,35 @@
 export const calculateBalances = (expenses, friends) => {
   const balances = {};
   
-  // Initialize balances
+  // Initialize balances for all friends
   friends.forEach(friend => {
-    balances[friend.id] = { name: friend.name, balance: 0, owes: [], owedBy: [] };
+    const userId = friend.id || friend.user_id;
+    balances[userId] = { name: friend.name, balance: 0, owes: [], owedBy: [] };
   });
 
   // Calculate what each person owes/is owed
   expenses.forEach(expense => {
     const totalAmount = parseFloat(expense.amount);
-    const splitAmount = totalAmount / expense.splitBetween.length;
+    const paidBy = expense.paid_by;
     
-    // Person who paid gets credited
-    if (balances[expense.paidBy]) {
-      balances[expense.paidBy].balance += totalAmount;
+    // Person who paid gets credited with the full amount
+    if (!balances[paidBy]) {
+      balances[paidBy] = { name: expense.paid_by_name || 'Unknown', balance: 0, owes: [], owedBy: [] };
     }
+    balances[paidBy].balance += totalAmount;
     
-    // Everyone who is part of the split gets debited
-    expense.splitBetween.forEach(personId => {
-      if (balances[personId]) {
-        balances[personId].balance -= splitAmount;
-      }
-    });
+    // Each person in the split gets debited their share
+    if (expense.splits && Array.isArray(expense.splits)) {
+      expense.splits.forEach(split => {
+        const userId = split.user_id;
+        const splitAmount = parseFloat(split.amount);
+        
+        if (!balances[userId]) {
+          balances[userId] = { name: split.user_name || 'Unknown', balance: 0, owes: [], owedBy: [] };
+        }
+        balances[userId].balance -= splitAmount;
+      });
+    }
   });
 
   return balances;

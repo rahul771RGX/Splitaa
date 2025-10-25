@@ -1,19 +1,47 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useExpenses } from '../context/ExpensesContext';
 import { calculateBalances } from '../services/calculations';
 import { Link } from 'react-router-dom';
-import { currentUser } from '../data/mockData';
 
 const Dashboard = () => {
   const { state } = useExpenses();
-  const { expenses, friends } = state;
+  const { expenses, groups, currentUser } = state;
+  const [allMembers, setAllMembers] = useState([]);
 
-  // Include current user in the friends list for balance calculation
-  const allUsers = [currentUser, ...friends];
-  const balances = calculateBalances(expenses, allUsers);
+  // Collect all unique members from all groups
+  useEffect(() => {
+    const membersMap = new Map();
+    
+    // Add current user
+    if (currentUser) {
+      membersMap.set(currentUser.id, currentUser);
+    }
+    
+    // Add all group members
+    groups.forEach(group => {
+      if (group.members) {
+        group.members.forEach(member => {
+          const memberId = member.user_id || member.id;
+          if (!membersMap.has(memberId)) {
+            membersMap.set(memberId, {
+              id: memberId,
+              name: member.name,
+              email: member.email
+            });
+          }
+        });
+      }
+    });
+    
+    setAllMembers(Array.from(membersMap.values()));
+  }, [groups, currentUser]);
+
+  // Calculate balances
+  const balances = calculateBalances(expenses, allMembers);
   
   // Calculate total amounts you owe and are owed
-  const currentUserBalance = balances[currentUser.id] || { balance: 0 };
+  const currentUserId = currentUser?.id;
+  const currentUserBalance = balances[currentUserId] || { balance: 0 };
   const totalOwed = currentUserBalance.balance < 0 ? Math.abs(currentUserBalance.balance) : 0;
   const totalOwedToYou = currentUserBalance.balance > 0 ? currentUserBalance.balance : 0;
 

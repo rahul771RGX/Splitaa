@@ -120,7 +120,7 @@ function Groups() {
   const navigate = useNavigate()
   const { colors } = useTheme()
   const { state } = useExpenses()
-  const { groups } = state
+  const { groups, currentUser } = state
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -131,6 +131,49 @@ function Groups() {
       setSearchParams(searchParams)
     }
   }, [searchParams, setSearchParams])
+
+  // Check if current user is admin of a specific group
+  const isUserAdminOfGroup = (group) => {
+    if (!currentUser || !group.members) return false
+    const currentMember = group.members.find(m => m.email === currentUser.email)
+    return currentMember?.role === 'admin'
+  }
+
+  // Get member names from group
+  const getMemberNames = (group) => {
+    if (!group.members || group.members.length === 0) return []
+    return group.members.map(m => m.name || m.email)
+  }
+
+  // Calculate balance for current user in a group
+  const getUserBalanceInGroup = (groupId) => {
+    if (!currentUser || !state.expenses) return 0
+    
+    // Filter expenses for this group
+    const groupExpenses = state.expenses.filter(e => e.group_id === groupId)
+    
+    let balance = 0
+    
+    groupExpenses.forEach(expense => {
+      const totalAmount = parseFloat(expense.amount) || 0
+      const paidBy = expense.paid_by
+      
+      // If I paid, I get credited
+      if (paidBy === currentUser.id) {
+        balance += totalAmount
+      }
+      
+      // Deduct my share from splits
+      if (expense.splits && Array.isArray(expense.splits)) {
+        const mySplit = expense.splits.find(s => s.user_id === currentUser.id)
+        if (mySplit) {
+          balance -= parseFloat(mySplit.amount) || 0
+        }
+      }
+    })
+    
+    return balance
+  }
 
   const getBalanceColor = (balance, type) => {
     if (balance === 0) return styles.neutralBalance
@@ -195,7 +238,20 @@ function Groups() {
 
         {groups.length > 0 ? (
           <div>
-            {groups.map(group => (
+            {groups.map(group => {
+              const userBalance = getUserBalanceInGroup(group.id)
+              const balanceText = userBalance > 0 
+                ? `+₹${userBalance.toFixed(2)}`
+                : userBalance < 0
+                ? `-₹${Math.abs(userBalance).toFixed(2)}`
+                : '₹0.00'
+              const balanceColor = userBalance > 0 
+                ? '#22C55E'  // Green for positive (owed to you)
+                : userBalance < 0 
+                ? '#EF4444'  // Red for negative (you owe)
+                : colors.text.secondary
+              
+              return (
               <Card 
                 key={group.id}
                 style={{
@@ -230,37 +286,40 @@ function Groups() {
                           ...styles.groupMembers,
                           color: colors.text.secondary
                         }}>
-                          {group.memberNames ? group.memberNames.length : group.members.length} members: {group.memberNames ? group.memberNames.join(', ') : group.members.join(', ')}
+                          {group.members?.length || 0} members: {getMemberNames(group).join(', ')}
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteGroup(group.id, group.name)
-                      }}
-                      style={{
-                        border: 'none',
-                        background: 'transparent',
-                        color: '#ef4444',
-                        cursor: 'pointer',
-                        padding: '8px',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = colors.isDarkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.1)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = 'transparent'
-                      }}
-                      title="Delete group"
-                    >
-                      <i className="bi bi-trash" style={{ fontSize: '1.1rem' }}></i>
-                    </button>
+                    {/* Delete button - Only for admin/host */}
+                    {isUserAdminOfGroup(group) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteGroup(group.id, group.name)
+                        }}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          color: '#ef4444',
+                          cursor: 'pointer',
+                          padding: '8px',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = colors.isDarkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.1)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = 'transparent'
+                        }}
+                        title="Delete group"
+                      >
+                        <i className="bi bi-trash" style={{ fontSize: '1.1rem' }}></i>
+                      </button>
+                    )}
                   </div>
                   
                   <div style={styles.balanceSection}>
@@ -268,10 +327,12 @@ function Groups() {
                       <span 
                         style={{
                           ...styles.balanceAmount,
-                          ...getBalanceColor(group.balance, group.type)
+                          color: balanceColor,
+                          fontSize: '0.9rem',
+                          fontWeight: '600'
                         }}
                       >
-                        {getBalanceText(group.balance, group.type)}
+                        {balanceText}
                       </span>
                     </div>
                     <Button 
@@ -290,7 +351,7 @@ function Groups() {
                   </div>
                 </Card.Body>
               </Card>
-            ))}
+            )})}
           </div>
         ) : (
           <div style={styles.emptyState}>

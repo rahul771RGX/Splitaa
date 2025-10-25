@@ -158,7 +158,7 @@ class Group {
     }
     
     public function getExpenses($groupId) {
-        return $this->db->fetchAll(
+        $expenses = $this->db->fetchAll(
             "SELECT e.*, u.name as paid_by_name, c.name as category_name
             FROM expenses e
             LEFT JOIN users u ON e.paid_by = u.id
@@ -167,5 +167,18 @@ class Group {
             ORDER BY e.date DESC, e.created_at DESC",
             [$groupId]
         );
+        
+        // Add splits to each expense
+        foreach ($expenses as &$expense) {
+            $expense['splits'] = $this->db->fetchAll(
+                "SELECT es.*, u.name as user_name
+                FROM expense_splits es
+                LEFT JOIN users u ON es.user_id = u.id
+                WHERE es.expense_id = ?",
+                [$expense['id']]
+            );
+        }
+        
+        return $expenses;
     }
 }

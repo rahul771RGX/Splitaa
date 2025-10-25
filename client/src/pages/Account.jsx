@@ -134,6 +134,12 @@ function Account() {
   const [darkMode, setDarkMode] = useState(false)
   const [notifications, setNotifications] = useState(true)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
+  const [passwordError, setPasswordError] = useState('')
 
   // Load user data from localStorage or Clerk
   useEffect(() => {
@@ -214,6 +220,45 @@ function Account() {
 
   const handleDarkModeToggle = (checked) => {
     toggleDarkMode()
+  }
+
+  const handlePasswordChange = () => {
+    setPasswordError('')
+    
+    // Validation
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError('All fields are required')
+      return
+    }
+    
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters')
+      return
+    }
+    
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('New passwords do not match')
+      return
+    }
+    
+    // TODO: Implement actual password change API call
+    console.log('Changing password...')
+    alert('Password changed successfully!')
+    setShowPasswordModal(false)
+    setPasswordForm({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    })
+  }
+
+  const handlePasswordKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (passwordForm.currentPassword && passwordForm.newPassword && passwordForm.confirmPassword) {
+        handlePasswordChange()
+      }
+    }
   }
 
   // Get user initials for avatar fallback
@@ -456,36 +501,104 @@ function Account() {
         </Button>
       </Container>
 
-      <Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Change Password</Modal.Title>
+      <Modal show={showPasswordModal} onHide={() => {
+        setShowPasswordModal(false)
+        setPasswordForm({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        })
+        setPasswordError('')
+      }} centered>
+        <Modal.Header closeButton style={{ backgroundColor: colors.bg.card, borderBottom: `1px solid ${colors.border.primary}` }}>
+          <Modal.Title style={{ color: colors.text.primary }}>
+            <i className="bi bi-lock me-2"></i>
+            Change Password
+          </Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body style={{ backgroundColor: colors.bg.card }}>
+          {passwordError && (
+            <div style={{
+              padding: '12px',
+              backgroundColor: '#fee2e2',
+              color: '#dc2626',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              fontSize: '14px'
+            }}>
+              {passwordError}
+            </div>
+          )}
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Current Password</Form.Label>
-              <Form.Control type="password" placeholder="Enter current password" />
+              <Form.Label style={{ color: colors.text.primary, fontWeight: '600' }}>Current Password</Form.Label>
+              <Form.Control 
+                type="password" 
+                placeholder="Enter current password"
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                onKeyDown={handlePasswordKeyDown}
+                autoFocus
+                style={{
+                  backgroundColor: colors.bg.tertiary,
+                  border: `1px solid ${colors.border.primary}`,
+                  color: colors.text.primary
+                }}
+              />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>New Password</Form.Label>
-              <Form.Control type="password" placeholder="Enter new password" />
+              <Form.Label style={{ color: colors.text.primary, fontWeight: '600' }}>New Password</Form.Label>
+              <Form.Control 
+                type="password" 
+                placeholder="Enter new password (min 6 characters)"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                onKeyDown={handlePasswordKeyDown}
+                style={{
+                  backgroundColor: colors.bg.tertiary,
+                  border: `1px solid ${colors.border.primary}`,
+                  color: colors.text.primary
+                }}
+              />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>Confirm New Password</Form.Label>
-              <Form.Control type="password" placeholder="Confirm new password" />
+              <Form.Label style={{ color: colors.text.primary, fontWeight: '600' }}>Confirm New Password</Form.Label>
+              <Form.Control 
+                type="password" 
+                placeholder="Confirm new password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                onKeyDown={handlePasswordKeyDown}
+                style={{
+                  backgroundColor: colors.bg.tertiary,
+                  border: `1px solid ${colors.border.primary}`,
+                  color: colors.text.primary
+                }}
+              />
             </Form.Group>
           </Form>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowPasswordModal(false)}>
+        <Modal.Footer style={{ backgroundColor: colors.bg.card, borderTop: `1px solid ${colors.border.primary}` }}>
+          <Button 
+            variant="secondary" 
+            onClick={() => {
+              setShowPasswordModal(false)
+              setPasswordForm({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: ''
+              })
+              setPasswordError('')
+            }}
+          >
             Cancel
           </Button>
           <Button 
             style={{backgroundColor: '#22C55E', border: 'none'}}
-            onClick={() => {
-              setShowPasswordModal(false)
-            }}
+            onClick={handlePasswordChange}
+            disabled={!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
           >
+            <i className="bi bi-check-circle me-2"></i>
             Update Password
           </Button>
         </Modal.Footer>

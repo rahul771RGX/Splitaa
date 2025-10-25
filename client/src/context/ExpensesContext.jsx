@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { getCurrentUser, getGroups, getSettlements } from '../services/api';
+import { getCurrentUser, getGroups, getSettlements, getAllExpenses } from '../services/api';
 
 const ExpensesContext = createContext();
 
@@ -151,15 +151,16 @@ export const ExpensesProvider = ({ children }) => {
 
         console.log('Loading data with token:', token.substring(0, 20) + '...');
 
-        const [currentUser, groups, settlements] = await Promise.all([
+        const [currentUser, groups, expenses, settlements] = await Promise.all([
           getCurrentUser().catch(err => { console.error('Failed to fetch user:', err); return null; }),
           getGroups().catch(err => { console.error('Failed to fetch groups:', err); return []; }),
+          getAllExpenses().catch(err => { console.error('Failed to fetch expenses:', err); return []; }),
           getSettlements().catch(err => { console.error('Failed to fetch settlements:', err); return []; })
         ]);
         
         dispatch({
           type: 'SET_ALL_DATA',
-          payload: { currentUser, friends: [], groups, expenses: [], settlements }
+          payload: { currentUser, friends: [], groups, expenses, settlements }
         });
       } catch (error) {
         console.error('Error loading data:', error);

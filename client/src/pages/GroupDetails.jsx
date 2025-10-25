@@ -5,7 +5,7 @@ import DesktopNavbar from '../components/Navbar'
 import BottomNavigation from '../components/BottomNavigation'
 import { useTheme } from '../contexts/ThemeContext'
 import { calculateSettlements, formatCurrency } from '../services/calculations'
-import { currentUser } from '../data/mockData'
+import { useExpenses } from '../context/ExpensesContext'
 import { 
   getGroupExpenses, 
   getGroupMembers, 
@@ -21,6 +21,8 @@ function GroupDetails() {
   const isMobile = window.innerWidth < 768
   const navigate = useNavigate()
   const { colors } = useTheme()
+  const { state } = useExpenses()
+  const currentUser = state.currentUser
   
   const searchParams = new URLSearchParams(window.location.search)
   const groupIdFromUrl = searchParams.get('groupId')
@@ -45,8 +47,9 @@ function GroupDetails() {
     category: 'food',
     splitType: 'equal',
     paidBy: '',
-    splits: []
+    customSplits: {} // Format: { userId: amount }
   })
+  const [expenseError, setExpenseError] = useState('')
 
   useEffect(() => {
     if (groupIdFromUrl) {
@@ -125,49 +128,150 @@ function GroupDetails() {
   const handleOpenExpenseModal = (expense = null) => {
     if (expense) {
       setEditingExpense(expense)
+      
+      // Convert splits array to customSplits object
+      const customSplits = {}
+      if (expense.splits && expense.splits.length > 0) {
+        expense.splits.forEach(split => {
+          customSplits[split.user_id] = split.amount
+        })
+      }
+      
       setExpenseForm({
         description: expense.description,
         amount: expense.amount,
         category: expense.category || 'food',
         splitType: expense.split_type || 'equal',
         paidBy: expense.paid_by,
-        splits: expense.splits || []
+        customSplits: customSplits
       })
     } else {
       setEditingExpense(null)
       const currentMember = groupMembers.find(m => m.email === currentUser.email)
+      
+      // Initialize customSplits with equal distribution
+      const customSplits = {}
+      groupMembers.forEach(member => {
+        const userId = member.user_id || member.id
+        customSplits[userId] = 0
+      })
+      
       setExpenseForm({
         description: '',
         amount: '',
         category: 'food',
         splitType: 'equal',
         paidBy: currentMember ? (currentMember.user_id || currentMember.id) : '',
-        splits: []
+        customSplits: customSplits
       })
     }
+    setExpenseError('')
     setShowExpenseModal(true)
   }
 
+  const handleCustomSplitChange = (userId, value) => {
+    const totalAmount = parseFloat(expenseForm.amount) || 0
+    const newAmount = value === '' ? 0 : parseFloat(value)
+    
+    // Create new splits object
+    const newSplits = { ...expenseForm.customSplits }
+    newSplits[userId] = newAmount
+    
+    // Calculate remaining amount to distribute
+    const remaining = totalAmount - newAmount
+    
+    // Find other members (excluding the one just changed)
+    const otherMembers = groupMembers.filter(member => {
+      const memberId = String(member.user_id || member.id)
+      return memberId !== String(userId)
+    })
+    
+    // Auto-fill remaining amount equally to other members
+    if (otherMembers.length > 0 && remaining >= 0) {
+      const autoAmount = remaining / otherMembers.length
+      otherMembers.forEach(member => {
+        const memberId = member.user_id || member.id
+        newSplits[memberId] = autoAmount
+      })
+    }
+    
+    setExpenseForm({
+      ...expenseForm,
+      customSplits: newSplits
+    })
+  }
+
+  const distributeEqually = () => {
+    if (!expenseForm.amount || groupMembers.length === 0) return
+    
+    const perPerson = parseFloat(expenseForm.amount) / groupMembers.length
+    const newSplits = {}
+    
+    groupMembers.forEach(member => {
+      const userId = member.user_id || member.id
+      newSplits[userId] = perPerson
+    })
+    
+    setExpenseForm({
+      ...expenseForm,
+      customSplits: newSplits
+    })
+  }
+
+  const getTotalCustomSplit = () => {
+    return Object.values(expenseForm.customSplits).reduce((sum, amount) => sum + (parseFloat(amount) || 0), 0)
+  }
+
   const handleSaveExpense = async () => {
+    setExpenseError('')
+    
     if (!expenseForm.description || !expenseForm.amount || !expenseForm.paidBy) {
-      alert('Please fill in all required fields')
+      setExpenseError('Please fill in all required fields')
       return
+    }
+
+    const totalAmount = parseFloat(expenseForm.amount)
+    
+    // Prepare splits based on split type
+    let splits = []
+    
+    if (expenseForm.splitType === 'equal') {
+      const perPerson = totalAmount / groupMembers.length
+      splits = groupMembers.map(m => ({
+        user_id: m.user_id || m.id,
+        amount: perPerson
+      }))
+    } else if (expenseForm.splitType === 'custom') {
+      const totalCustomSplit = getTotalCustomSplit()
+      
+      // Validate custom splits
+      if (Math.abs(totalCustomSplit - totalAmount) > 0.01) {
+        setExpenseError(`Custom splits (${formatCurrency(totalCustomSplit)}) must equal total amount (${formatCurrency(totalAmount)})`)
+        return
+      }
+      
+      splits = Object.entries(expenseForm.customSplits)
+        .filter(([_, amount]) => parseFloat(amount) > 0)
+        .map(([userId, amount]) => ({
+          user_id: parseInt(userId),
+          amount: parseFloat(amount)
+        }))
+      
+      if (splits.length === 0) {
+        setExpenseError('Please assign amounts to at least one person')
+        return
+      }
     }
 
     try {
       const expenseData = {
         group_id: parseInt(groupIdFromUrl),
         description: expenseForm.description,
-        amount: parseFloat(expenseForm.amount),
+        amount: totalAmount,
         category: expenseForm.category,
         split_type: expenseForm.splitType,
         paid_by: parseInt(expenseForm.paidBy),
-        splits: expenseForm.splitType === 'equal' 
-          ? groupMembers.map(m => ({
-              user_id: m.user_id || m.id,
-              amount: parseFloat(expenseForm.amount) / groupMembers.length
-            }))
-          : expenseForm.splits
+        splits: splits
       }
 
       if (editingExpense) {
@@ -177,10 +281,27 @@ function GroupDetails() {
       }
 
       setShowExpenseModal(false)
+      setExpenseForm({
+        description: '',
+        amount: '',
+        category: 'food',
+        splitType: 'equal',
+        paidBy: '',
+        customSplits: {}
+      })
       loadGroupData()
     } catch (error) {
       console.error('Error saving expense:', error)
-      alert('Failed to save expense: ' + (error.message || 'Unknown error'))
+      setExpenseError(error.message || 'Failed to save expense')
+    }
+  }
+
+  const handleExpenseKeyDown = (e) => {
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault()
+      if (expenseForm.description && expenseForm.amount && expenseForm.paidBy) {
+        handleSaveExpense()
+      }
     }
   }
 
@@ -195,9 +316,20 @@ function GroupDetails() {
     }
   }
 
+  const handlePayClick = (debt) => {
+    // For now, navigate to payment page or show payment modal
+    // You can enhance this later with actual payment integration
+    alert(`Payment feature: Pay ${formatCurrency(debt.amount)} to ${debt.toName}`)
+    // navigate('/payment', { state: { debt, groupId: groupIdFromUrl } })
+  }
+
   // Calculate member balances
   const calculateMemberBalances = () => {
     const balances = {}
+    
+    console.log('=== Starting Balance Calculation ===')
+    console.log('Group Members:', groupMembers)
+    console.log('Group Expenses:', groupExpenses)
     
     groupMembers.forEach(member => {
       const userId = member.user_id || member.id
@@ -205,11 +337,16 @@ function GroupDetails() {
         member: member,
         balance: 0,
         paid: 0,
-        owe: 0
+        owe: 0,
+        owesTo: [],    // Array of { toId, toName, amount }
+        owedBy: []     // Array of { fromId, fromName, amount }
       }
     })
 
     groupExpenses.forEach(expense => {
+      console.log('Processing expense:', expense)
+      console.log('Expense splits:', expense.splits)
+      
       const paidBy = parseInt(expense.paid_by)
       const amount = parseFloat(expense.amount)
       
@@ -219,10 +356,46 @@ function GroupDetails() {
       
       if (expense.splits && expense.splits.length > 0) {
         expense.splits.forEach(split => {
+          console.log('Processing split:', split)
+          
           const userId = parseInt(split.user_id)
           const splitAmount = parseFloat(split.amount)
+          
           if (balances[userId]) {
             balances[userId].owe += splitAmount
+            
+            // Track bilateral debt: userId owes paidBy
+            if (userId !== paidBy) {
+              console.log(`User ${userId} owes ${splitAmount} to ${paidBy}`)
+              
+              // Find existing debt to this person
+              const existingDebt = balances[userId].owesTo.find(d => d.toId === paidBy)
+              if (existingDebt) {
+                existingDebt.amount += splitAmount
+              } else {
+                const payer = getMemberById(paidBy)
+                console.log('Payer found:', payer)
+                balances[userId].owesTo.push({
+                  toId: paidBy,
+                  toName: payer?.name || 'Unknown',
+                  amount: splitAmount
+                })
+              }
+              
+              // Track reverse: paidBy is owed by userId
+              const existingCredit = balances[paidBy].owedBy.find(d => d.fromId === userId)
+              if (existingCredit) {
+                existingCredit.amount += splitAmount
+              } else {
+                const debtor = getMemberById(userId)
+                console.log('Debtor found:', debtor)
+                balances[paidBy].owedBy.push({
+                  fromId: userId,
+                  fromName: debtor?.name || 'Unknown',
+                  amount: splitAmount
+                })
+              }
+            }
           }
         })
       }
@@ -233,7 +406,9 @@ function GroupDetails() {
       balances[userId].balance = balances[userId].paid - balances[userId].owe
     })
 
-    return Object.values(balances)
+    const result = Object.values(balances)
+    console.log('Member Balances with owesTo/owedBy:', result)
+    return result
   }
 
   const getInitials = (name) => {
@@ -267,6 +442,13 @@ function GroupDetails() {
 
   const getMemberById = (userId) => {
     return groupMembers.find(m => (m.user_id || m.id) === parseInt(userId))
+  }
+
+  // Check if current user is admin/host
+  const isCurrentUserAdmin = () => {
+    if (!currentUser) return false
+    const currentMember = groupMembers.find(m => m.email === currentUser.email)
+    return currentMember?.role === 'admin'
   }
 
   if (loading) {
@@ -462,25 +644,28 @@ function GroupDetails() {
                               }}>
                                 {formatCurrency(expense.amount)}
                               </div>
-                              <div>
-                                <Button
-                                  variant="outline-primary"
-                                  size="sm"
-                                  className="me-1"
-                                  onClick={() => handleOpenExpenseModal(expense)}
-                                  style={{ borderRadius: '6px', fontSize: '0.75rem' }}
-                                >
-                                  <i className="bi bi-pencil"></i>
-                                </Button>
-                                <Button
-                                  variant="outline-danger"
-                                  size="sm"
-                                  onClick={() => handleDeleteExpense(expense.id)}
-                                  style={{ borderRadius: '6px', fontSize: '0.75rem' }}
-                                >
-                                  <i className="bi bi-trash"></i>
-                                </Button>
-                              </div>
+                              {/* Only show edit/delete buttons to admin/host */}
+                              {isCurrentUserAdmin() && (
+                                <div>
+                                  <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    className="me-1"
+                                    onClick={() => handleOpenExpenseModal(expense)}
+                                    style={{ borderRadius: '6px', fontSize: '0.75rem' }}
+                                  >
+                                    <i className="bi bi-pencil"></i>
+                                  </Button>
+                                  <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    onClick={() => handleDeleteExpense(expense.id)}
+                                    style={{ borderRadius: '6px', fontSize: '0.75rem' }}
+                                  >
+                                    <i className="bi bi-trash"></i>
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </Card.Body>
@@ -513,6 +698,11 @@ function GroupDetails() {
                     const balance = memberData.balance
                     const member = memberData.member
                     const memberId = member.user_id || member.id
+                    const isCurrentUser = member.email === currentUser?.email
+                    
+                    console.log(`Member: ${member.name}, Balance: ${balance}, IsCurrentUser: ${isCurrentUser}, OwesTo:`, memberData.owesTo, 'OwedBy:', memberData.owedBy)
+                    console.log('Current User:', currentUser)
+                    console.log('Member Email:', member.email, 'Current User Email:', currentUser?.email)
                     
                     return (
                       <Card
@@ -521,63 +711,173 @@ function GroupDetails() {
                         style={{
                           backgroundColor: colors.bg.card,
                           border: `1px solid ${colors.border.primary}`,
-                          borderRadius: '12px'
+                          borderRadius: '12px',
+                          overflow: 'hidden'
                         }}
                       >
                         <Card.Body style={{ padding: '1rem' }}>
-                          <div className="d-flex align-items-center justify-content-between">
-                            <div className="d-flex align-items-center flex-grow-1">
-                              <div style={{
-                                width: '56px',
-                                height: '56px',
-                                borderRadius: '50%',
-                                backgroundColor: getAvatarColor(member.name),
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#FFFFFF',
-                                fontWeight: '700',
-                                fontSize: '1.25rem',
-                                marginRight: '1rem',
-                                flexShrink: 0
-                              }}>
-                                {getInitials(member.name)}
-                              </div>
-                              <div className="flex-grow-1">
-                                <h6 style={{ color: colors.text.primary, marginBottom: '0.25rem', fontWeight: '600', fontSize: '1rem' }}>
+                          {/* Member Info Row */}
+                          <div className="d-flex align-items-center" style={{ marginBottom: '0.75rem' }}>
+                            <div style={{
+                              width: '48px',
+                              height: '48px',
+                              borderRadius: '50%',
+                              backgroundColor: getAvatarColor(member.name),
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#FFFFFF',
+                              fontWeight: '700',
+                              fontSize: '1.1rem',
+                              marginRight: '0.75rem',
+                              flexShrink: 0
+                            }}>
+                              {getInitials(member.name)}
+                            </div>
+                            
+                            <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                              <div className="d-flex align-items-center" style={{ marginBottom: '0.125rem' }}>
+                                <h6 style={{ 
+                                  color: colors.text.primary, 
+                                  marginBottom: 0, 
+                                  fontWeight: '600', 
+                                  fontSize: '1rem',
+                                  marginRight: '0.5rem'
+                                }}>
                                   {member.name}
-                                  {member.email === currentUser.email && (
-                                    <Badge bg="warning" className="ms-2" style={{ fontSize: '0.7rem' }}>me</Badge>
-                                  )}
-                                  {member.role === 'admin' && (
-                                    <Badge bg="danger" className="ms-2" style={{ fontSize: '0.7rem' }}>Host</Badge>
-                                  )}
                                 </h6>
-                                <p style={{ color: colors.text.secondary, marginBottom: 0, fontSize: '0.85rem' }}>
-                                  {member.email}
-                                </p>
-                                {/* Balance Info */}
-                                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
-                                  {balance > 0 ? (
-                                    <span style={{ color: '#22C55E', fontWeight: '600' }}>
-                                      <i className="bi bi-arrow-down-circle me-1"></i>
-                                      Gets back {formatCurrency(Math.abs(balance))}
-                                    </span>
-                                  ) : balance < 0 ? (
-                                    <span style={{ color: '#EF4444', fontWeight: '600' }}>
-                                      <i className="bi bi-arrow-up-circle me-1"></i>
-                                      Owes {formatCurrency(Math.abs(balance))}
-                                    </span>
-                                  ) : (
-                                    <span style={{ color: colors.text.secondary }}>
-                                      <i className="bi bi-check-circle me-1"></i>
-                                      Settled up
-                                    </span>
-                                  )}
-                                </div>
+                                {isCurrentUser && (
+                                  <Badge bg="warning" style={{ fontSize: '0.65rem', padding: '0.2rem 0.4rem' }}>me</Badge>
+                                )}
+                                {member.role === 'admin' && (
+                                  <Badge bg="danger" className="ms-1" style={{ fontSize: '0.65rem', padding: '0.2rem 0.4rem' }}>Host</Badge>
+                                )}
                               </div>
+                              <p style={{ 
+                                color: colors.text.secondary, 
+                                marginBottom: 0, 
+                                fontSize: '0.8rem',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {member.email}
+                              </p>
                             </div>
                           </div>
+
+                          {/* Payment Details - Show breakdown for all members */}
+                          {!isCurrentUser && memberData.owedBy && memberData.owedBy.length > 0 ? (
+                            // For OTHER members: Check if current user owes them
+                            <div>
+                              {memberData.owedBy.map((debt, idx) => {
+                                // Check if the current user is the one who owes this member
+                                const currentUserId = currentUser?.id || groupMembers.find(m => m.email === currentUser?.email)?.user_id || groupMembers.find(m => m.email === currentUser?.email)?.id;
+                                const currentUserOwesThisMember = debt.fromId == currentUserId;
+                                
+                                console.log(`Member ${member.name} is owed by ${debt.fromName} (ID: ${debt.fromId}), Current User ID: ${currentUserId}, Current User Owes: ${currentUserOwesThisMember}`);
+                                
+                                // Only show if current user owes this member
+                                if (!currentUserOwesThisMember) return null;
+                                
+                                return (
+                                  <div 
+                                    key={idx} 
+                                    className="d-flex align-items-center justify-content-between"
+                                    style={{ 
+                                      padding: '0.75rem',
+                                      backgroundColor: colors.bg.tertiary,
+                                      borderRadius: '8px',
+                                      border: `1px solid ${colors.border.primary}`
+                                    }}
+                                  >
+                                    <div className="d-flex align-items-baseline gap-2">
+                                      <div style={{ 
+                                        color: '#EF4444', 
+                                        fontWeight: '700', 
+                                        fontSize: '1.1rem'
+                                      }}>
+                                        {formatCurrency(debt.amount)}
+                                      </div>
+                                      <div style={{ color: colors.text.secondary, fontSize: '0.75rem' }}>
+                                        you owe
+                                      </div>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handlePayClick({
+                                        toId: memberId,
+                                        toName: member.name,
+                                        amount: debt.amount,
+                                        fromId: currentUserId,
+                                        fromName: currentUser?.name
+                                      })}
+                                      style={{
+                                        backgroundColor: '#22C55E',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        padding: '0.5rem 1.25rem',
+                                        fontSize: '0.875rem',
+                                        fontWeight: '600',
+                                        boxShadow: '0 2px 4px rgba(34, 197, 94, 0.2)',
+                                        whiteSpace: 'nowrap'
+                                      }}
+                                    >
+                                      <i className="bi bi-credit-card me-1"></i>
+                                      Pay
+                                    </Button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : !isCurrentUser && memberData.owesTo && memberData.owesTo.length > 0 ? (
+                            // For OTHER members: Check if they owe current user
+                            <div>
+                              {memberData.owesTo.map((debt, idx) => {
+                                // Check if this member owes the current user
+                                const currentUserId = currentUser?.id || groupMembers.find(m => m.email === currentUser?.email)?.user_id || groupMembers.find(m => m.email === currentUser?.email)?.id;
+                                const memberOwesCurrentUser = debt.toId == currentUserId;
+                                
+                                console.log(`Member ${member.name} owes to ${debt.toName} (ID: ${debt.toId}), Current User ID: ${currentUserId}, Owes Current User: ${memberOwesCurrentUser}`);
+                                
+                                // Only show if they owe current user
+                                if (!memberOwesCurrentUser) return null;
+                                
+                                return (
+                                  <div 
+                                    key={idx}
+                                    className="d-flex align-items-center justify-content-between"
+                                    style={{ 
+                                      padding: '0.75rem',
+                                      backgroundColor: colors.bg.tertiary,
+                                      borderRadius: '8px',
+                                      border: `1px solid ${colors.border.primary}`
+                                    }}
+                                  >
+                                    <div className="d-flex align-items-baseline gap-2">
+                                      <div style={{ 
+                                        color: '#22C55E', 
+                                        fontWeight: '700', 
+                                        fontSize: '1.1rem'
+                                      }}>
+                                        {formatCurrency(debt.amount)}
+                                      </div>
+                                      <div style={{ color: colors.text.secondary, fontSize: '0.75rem' }}>
+                                        you will receive
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : balance === 0 && !isCurrentUser ? (
+                            <div style={{ paddingTop: '0.5rem' }}>
+                              <span style={{ color: colors.text.secondary, fontSize: '0.8rem' }}>
+                                <i className="bi bi-check-circle me-1"></i>
+                                Settled up
+                              </span>
+                            </div>
+                          ) : null}
                         </Card.Body>
                       </Card>
                     )
@@ -585,22 +885,26 @@ function GroupDetails() {
                 </div>
               )}
 
-              {/* Add Members Button */}
+              {/* Add Members Button - Only for Admin/Host */}
+              {isCurrentUserAdmin() && (
+                <div className="d-grid gap-2 mt-4">
+                  <Button
+                    size="lg"
+                    style={{
+                      backgroundColor: '#F97316',
+                      border: 'none',
+                      borderRadius: '12px',
+                      fontWeight: '600',
+                      padding: '1rem'
+                    }}
+                    onClick={() => setShowAddMemberModal(true)}
+                  >
+                    <i className="bi bi-person-plus me-2"></i>
+                    Add members
+                  </Button>
+                </div>
+              )}
               <div className="d-grid gap-2 mt-4">
-                <Button
-                  size="lg"
-                  style={{
-                    backgroundColor: '#F97316',
-                    border: 'none',
-                    borderRadius: '12px',
-                    fontWeight: '600',
-                    padding: '1rem'
-                  }}
-                  onClick={() => setShowAddMemberModal(true)}
-                >
-                  <i className="bi bi-person-plus me-2"></i>
-                  Add members
-                </Button>
                 <Button
                   size="lg"
                   variant="light"
@@ -621,31 +925,33 @@ function GroupDetails() {
         </div>
       </Container>
 
-      {/* Floating Action Button */}
-      <div style={{
-        position: 'fixed',
-        bottom: isMobile ? '100px' : '5rem',
-        right: '2rem',
-        zIndex: 1000
-      }}>
-        <Button
-          onClick={() => handleOpenExpenseModal()}
-          style={{
-            width: '60px',
-            height: '60px',
-            borderRadius: '50%',
-            backgroundColor: '#F97316',
-            border: 'none',
-            boxShadow: '0 4px 12px rgba(249, 115, 22, 0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.5rem'
-          }}
-        >
-          <i className="bi bi-plus"></i>
-        </Button>
-      </div>
+      {/* Floating Action Button - Only for Admin/Host */}
+      {isCurrentUserAdmin() && (
+        <div style={{
+          position: 'fixed',
+          bottom: isMobile ? '100px' : '5rem',
+          right: '2rem',
+          zIndex: 1000
+        }}>
+          <Button
+            onClick={() => handleOpenExpenseModal()}
+            style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              backgroundColor: '#F97316',
+              border: 'none',
+              boxShadow: '0 4px 12px rgba(249, 115, 22, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.5rem'
+            }}
+          >
+            <i className="bi bi-plus"></i>
+          </Button>
+        </div>
+      )}
 
       {/* Add Member Modal */}
       <Modal show={showAddMemberModal} onHide={() => setShowAddMemberModal(false)} centered>
@@ -712,6 +1018,13 @@ function GroupDetails() {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body style={{ backgroundColor: colors.bg.card }}>
+          {expenseError && (
+            <Alert variant="danger" style={{ fontSize: '0.9rem' }}>
+              <i className="bi bi-exclamation-triangle me-2"></i>
+              {expenseError}
+            </Alert>
+          )}
+          
           <Form>
             <Form.Group className="mb-3">
               <Form.Label style={{ color: colors.text.primary, fontWeight: '600' }}>
@@ -719,13 +1032,16 @@ function GroupDetails() {
               </Form.Label>
               <Form.Control
                 type="text"
-                placeholder="What's this expense for?"
+                placeholder="What's this expense for? (e.g., Dinner at restaurant)"
                 value={expenseForm.description}
                 onChange={(e) => setExpenseForm({...expenseForm, description: e.target.value})}
+                onKeyDown={handleExpenseKeyDown}
+                autoFocus
                 style={{
                   backgroundColor: colors.bg.tertiary,
                   border: `1px solid ${colors.border.primary}`,
-                  color: colors.text.primary
+                  color: colors.text.primary,
+                  padding: '0.75rem'
                 }}
               />
             </Form.Group>
@@ -737,15 +1053,57 @@ function GroupDetails() {
               <Form.Control
                 type="number"
                 step="0.01"
+                min="0"
                 placeholder="0.00"
                 value={expenseForm.amount}
-                onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
+                onChange={(e) => {
+                  setExpenseForm({...expenseForm, amount: e.target.value})
+                  // Auto-update custom splits if in equal mode
+                  if (expenseForm.splitType === 'equal' && e.target.value) {
+                    const perPerson = parseFloat(e.target.value) / groupMembers.length
+                    const newSplits = {}
+                    groupMembers.forEach(m => {
+                      newSplits[m.user_id || m.id] = perPerson
+                    })
+                    setExpenseForm(prev => ({...prev, customSplits: newSplits}))
+                  }
+                }}
+                onKeyDown={handleExpenseKeyDown}
                 style={{
                   backgroundColor: colors.bg.tertiary,
                   border: `1px solid ${colors.border.primary}`,
-                  color: colors.text.primary
+                  color: colors.text.primary,
+                  padding: '0.75rem',
+                  fontSize: '1.1rem',
+                  fontWeight: '600'
                 }}
               />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label style={{ color: colors.text.primary, fontWeight: '600' }}>
+                Paid By <span style={{ color: '#EF4444' }}>*</span>
+              </Form.Label>
+              <Form.Select
+                value={expenseForm.paidBy}
+                onChange={(e) => setExpenseForm({...expenseForm, paidBy: e.target.value})}
+                style={{
+                  backgroundColor: colors.bg.tertiary,
+                  border: `1px solid ${colors.border.primary}`,
+                  color: colors.text.primary,
+                  padding: '0.75rem'
+                }}
+              >
+                <option value="">Select who paid</option>
+                {groupMembers.map(member => {
+                  const memberId = member.user_id || member.id
+                  return (
+                    <option key={memberId} value={memberId}>
+                      {member.name} {member.email === currentUser.email ? '(You)' : ''}
+                    </option>
+                  )
+                })}
+              </Form.Select>
             </Form.Group>
 
             <Form.Group className="mb-3">
@@ -756,7 +1114,8 @@ function GroupDetails() {
                 style={{
                   backgroundColor: colors.bg.tertiary,
                   border: `1px solid ${colors.border.primary}`,
-                  color: colors.text.primary
+                  color: colors.text.primary,
+                  padding: '0.75rem'
                 }}
               >
                 <option value="food">🍽️ Food & Drinks</option>
@@ -770,79 +1129,190 @@ function GroupDetails() {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label style={{ color: colors.text.primary, fontWeight: '600' }}>
-                Paid By <span style={{ color: '#EF4444' }}>*</span>
+              <Form.Label style={{ color: colors.text.primary, fontWeight: '600', marginBottom: '0.75rem' }}>
+                Split Type
               </Form.Label>
-              <Form.Select
-                value={expenseForm.paidBy}
-                onChange={(e) => setExpenseForm({...expenseForm, paidBy: e.target.value})}
-                style={{
-                  backgroundColor: colors.bg.tertiary,
-                  border: `1px solid ${colors.border.primary}`,
-                  color: colors.text.primary
-                }}
-              >
-                <option value="">Select who paid</option>
-                {groupMembers.map(member => (
-                  <option key={member.user_id || member.id} value={member.user_id || member.id}>
-                    {member.name}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label style={{ color: colors.text.primary, fontWeight: '600' }}>Split Type</Form.Label>
-              <div className="d-flex gap-3">
+              <div className="d-flex gap-2 mb-3">
                 <Button
                   variant={expenseForm.splitType === 'equal' ? 'primary' : 'outline-secondary'}
                   className="flex-grow-1"
-                  onClick={() => setExpenseForm({...expenseForm, splitType: 'equal'})}
+                  onClick={() => {
+                    // Just switch to equal mode - no need to populate customSplits
+                    setExpenseForm({...expenseForm, splitType: 'equal'})
+                  }}
                   style={{
                     backgroundColor: expenseForm.splitType === 'equal' ? '#F97316' : 'transparent',
                     borderColor: expenseForm.splitType === 'equal' ? '#F97316' : colors.border.primary,
-                    color: expenseForm.splitType === 'equal' ? '#FFFFFF' : colors.text.primary
+                    color: expenseForm.splitType === 'equal' ? '#FFFFFF' : colors.text.primary,
+                    padding: '0.75rem',
+                    fontWeight: '600',
+                    borderRadius: '8px'
                   }}
                 >
-                  <i className="bi bi-people me-2"></i>
-                  Equal Split
+                  <i className="bi bi-people-fill me-2"></i>
+                  Split Equally
                 </Button>
                 <Button
                   variant={expenseForm.splitType === 'custom' ? 'primary' : 'outline-secondary'}
                   className="flex-grow-1"
-                  onClick={() => setExpenseForm({...expenseForm, splitType: 'custom'})}
+                  onClick={() => {
+                    // Switch to custom and populate with equal amounts as starting point
+                    const newForm = {...expenseForm, splitType: 'custom'}
+                    setExpenseForm(newForm)
+                    
+                    // Populate custom splits if amount exists
+                    if (expenseForm.amount && groupMembers.length > 0) {
+                      const perPerson = parseFloat(expenseForm.amount) / groupMembers.length
+                      const newSplits = {}
+                      groupMembers.forEach(member => {
+                        const userId = member.user_id || member.id
+                        newSplits[userId] = perPerson
+                      })
+                      setExpenseForm({...newForm, customSplits: newSplits})
+                    }
+                  }}
                   style={{
                     backgroundColor: expenseForm.splitType === 'custom' ? '#F97316' : 'transparent',
                     borderColor: expenseForm.splitType === 'custom' ? '#F97316' : colors.border.primary,
-                    color: expenseForm.splitType === 'custom' ? '#FFFFFF' : colors.text.primary
+                    color: expenseForm.splitType === 'custom' ? '#FFFFFF' : colors.text.primary,
+                    padding: '0.75rem',
+                    fontWeight: '600',
+                    borderRadius: '8px'
                   }}
                 >
                   <i className="bi bi-sliders me-2"></i>
                   Custom Split
                 </Button>
               </div>
+
+              {/* Equal Split Info */}
+              {expenseForm.splitType === 'equal' && expenseForm.amount && groupMembers.length > 0 && (
+                <Alert variant="info" style={{ 
+                  backgroundColor: '#DBEAFE', 
+                  border: '1px solid #3B82F6',
+                  borderRadius: '8px',
+                  padding: '0.75rem'
+                }}>
+                  <small style={{ color: '#1E40AF', fontWeight: '500' }}>
+                    <i className="bi bi-info-circle me-2"></i>
+                    Each of the {groupMembers.length} members will pay
+                    <strong className="ms-2" style={{ fontSize: '1rem' }}>
+                      {formatCurrency(parseFloat(expenseForm.amount) / groupMembers.length)}
+                    </strong>
+                  </small>
+                </Alert>
+              )}
+
+              {/* Custom Split Section */}
+              {expenseForm.splitType === 'custom' && (
+                <Card style={{
+                  backgroundColor: colors.bg.tertiary,
+                  border: `1px solid ${colors.border.primary}`,
+                  borderRadius: '12px'
+                }}>
+                  <Card.Body style={{ padding: '1rem' }}>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h6 style={{ color: colors.text.primary, margin: 0, fontWeight: '600' }}>
+                        Assign Amounts
+                      </h6>
+                      <Button
+                        size="sm"
+                        variant="outline-primary"
+                        onClick={distributeEqually}
+                        style={{
+                          borderRadius: '6px',
+                          fontSize: '0.85rem',
+                          padding: '0.25rem 0.75rem'
+                        }}
+                      >
+                        <i className="bi bi-distribute-vertical me-1"></i>
+                        Distribute Equally
+                      </Button>
+                    </div>
+                    
+                    {groupMembers.map(member => {
+                      const memberId = member.user_id || member.id
+                      return (
+                        <div key={memberId} className="mb-2">
+                          <div className="d-flex align-items-center gap-2">
+                            <div style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              backgroundColor: getAvatarColor(member.name),
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#FFFFFF',
+                              fontWeight: '700',
+                              fontSize: '0.85rem',
+                              flexShrink: 0
+                            }}>
+                              {getInitials(member.name)}
+                            </div>
+                            <div className="flex-grow-1" style={{ fontSize: '0.9rem', color: colors.text.primary, fontWeight: '500' }}>
+                              {member.name}
+                              {member.email === currentUser.email && (
+                                <Badge bg="warning" className="ms-2" style={{ fontSize: '0.65rem' }}>You</Badge>
+                              )}
+                            </div>
+                            <Form.Control
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="0.00"
+                              value={expenseForm.customSplits[memberId] || ''}
+                              onChange={(e) => handleCustomSplitChange(memberId, e.target.value)}
+                              style={{
+                                width: '120px',
+                                backgroundColor: colors.bg.card,
+                                border: `1px solid ${colors.border.primary}`,
+                                color: colors.text.primary,
+                                padding: '0.5rem',
+                                textAlign: 'right',
+                                fontWeight: '600'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                    
+                    {/* Custom Split Summary */}
+                    {expenseForm.amount && (
+                      <div style={{
+                        marginTop: '1rem',
+                        paddingTop: '1rem',
+                        borderTop: `2px solid ${colors.border.primary}`
+                      }}>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <span style={{ color: colors.text.secondary, fontSize: '0.9rem' }}>Total Split:</span>
+                          <span style={{ 
+                            fontWeight: '700', 
+                            fontSize: '1.1rem',
+                            color: Math.abs(getTotalCustomSplit() - parseFloat(expenseForm.amount)) < 0.01 ? '#22C55E' : '#EF4444'
+                          }}>
+                            {formatCurrency(getTotalCustomSplit())}
+                          </span>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center mt-1">
+                          <span style={{ color: colors.text.secondary, fontSize: '0.9rem' }}>Total Amount:</span>
+                          <span style={{ fontWeight: '700', fontSize: '1.1rem', color: colors.text.primary }}>
+                            {formatCurrency(parseFloat(expenseForm.amount))}
+                          </span>
+                        </div>
+                        {Math.abs(getTotalCustomSplit() - parseFloat(expenseForm.amount)) > 0.01 && (
+                          <Alert variant="warning" className="mt-2 mb-0" style={{ fontSize: '0.85rem', padding: '0.5rem' }}>
+                            <i className="bi bi-exclamation-triangle me-1"></i>
+                            Difference: {formatCurrency(Math.abs(getTotalCustomSplit() - parseFloat(expenseForm.amount)))}
+                          </Alert>
+                        )}
+                      </div>
+                    )}
+                  </Card.Body>
+                </Card>
+              )}
             </Form.Group>
-
-            {expenseForm.splitType === 'equal' && expenseForm.amount && groupMembers.length > 0 && (
-              <Alert variant="info" style={{ backgroundColor: colors.bg.tertiary, border: `1px solid ${colors.border.primary}` }}>
-                <small style={{ color: colors.text.primary }}>
-                  <i className="bi bi-info-circle me-2"></i>
-                  This expense will be split equally among all {groupMembers.length} members
-                  <strong className="ms-2">
-                    ({formatCurrency(parseFloat(expenseForm.amount) / groupMembers.length)} per person)
-                  </strong>
-                </small>
-              </Alert>
-            )}
-
-            {expenseForm.splitType === 'custom' && (
-              <Alert variant="warning" style={{ backgroundColor: colors.bg.tertiary, border: `1px solid ${colors.border.primary}` }}>
-                <small style={{ color: colors.text.primary }}>
-                  <i className="bi bi-exclamation-triangle me-2"></i>
-                  Custom split feature coming soon! For now, please use equal split.
-                </small>
-              </Alert>
-            )}
           </Form>
         </Modal.Body>
         <Modal.Footer style={{ backgroundColor: colors.bg.card, borderTop: `1px solid ${colors.border.primary}` }}>
@@ -852,10 +1322,12 @@ function GroupDetails() {
           <Button 
             style={{
               backgroundColor: '#22C55E',
-              border: 'none'
+              border: 'none',
+              padding: '0.75rem 1.5rem',
+              fontWeight: '600'
             }}
             onClick={handleSaveExpense}
-            disabled={!expenseForm.description || !expenseForm.amount || !expenseForm.paidBy || expenseForm.splitType === 'custom'}
+            disabled={!expenseForm.description || !expenseForm.amount || !expenseForm.paidBy}
           >
             <i className="bi bi-check-circle me-2"></i>
             {editingExpense ? 'Update Expense' : 'Add Expense'}

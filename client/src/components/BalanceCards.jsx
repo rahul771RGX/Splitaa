@@ -2,7 +2,7 @@ import { Row, Col, Card } from 'react-bootstrap'
 import { useTheme } from '../contexts/ThemeContext'
 import { useExpenses } from '../context/ExpensesContext'
 import { calculateBalances } from '../services/calculations'
-import { currentUser } from '../data/mockData'
+import { useEffect, useState } from 'react'
 
 const styles = {
   balanceCard: {
@@ -41,17 +41,43 @@ function BalanceCards() {
   const isMobile = window.innerWidth < 768
   const { colors } = useTheme()
   const { state } = useExpenses()
-  const { expenses, friends } = state
+  const { expenses, groups, currentUser } = state
+  const [allMembers, setAllMembers] = useState([])
 
-  // Include current user in the friends list for balance calculation
-  const allUsers = [currentUser, ...friends]
+  // Collect all unique members from all groups
+  useEffect(() => {
+    const membersMap = new Map()
+    
+    // Add current user
+    if (currentUser) {
+      membersMap.set(currentUser.id, currentUser)
+    }
+    
+    // Add all group members
+    groups.forEach(group => {
+      if (group.members) {
+        group.members.forEach(member => {
+          const memberId = member.user_id || member.id
+          if (!membersMap.has(memberId)) {
+            membersMap.set(memberId, {
+              id: memberId,
+              name: member.name,
+              email: member.email
+            })
+          }
+        })
+      }
+    })
+    
+    setAllMembers(Array.from(membersMap.values()))
+  }, [groups, currentUser])
   
-  // Calculate balances for all friends
-  const balances = calculateBalances(expenses, allUsers)
+  // Calculate balances for all members
+  const balances = calculateBalances(expenses, allMembers)
   
   // Calculate total amounts you owe and are owed
-  // For current user (id: 1)
-  const currentUserBalance = balances[currentUser.id] || { balance: 0 }
+  const currentUserId = currentUser?.id
+  const currentUserBalance = balances[currentUserId] || { balance: 0 }
   
   // If balance is negative, you owe money
   // If balance is positive, you are owed money
@@ -76,7 +102,9 @@ function BalanceCards() {
         >
           <Card.Body className={`d-flex align-items-center justify-content-between ${isMobile ? 'p-3' : 'p-4'}`}>
             <div>
-              <h2 style={{...styles.balanceAmount, fontSize: isMobile ? '1.5rem' : '2rem'}}>₹{totalOwed.toFixed(2)}</h2>
+              <h2 style={{...styles.balanceAmount, fontSize: isMobile ? '1.5rem' : '2rem'}}>
+                {totalOwed > 0 ? `-₹${totalOwed.toFixed(2)}` : '₹0.00'}
+              </h2>
               <p style={{...styles.balanceLabel, fontSize: isMobile ? '0.8rem' : '0.9rem'}}>You owe</p>
             </div>
             {!isMobile && <div>

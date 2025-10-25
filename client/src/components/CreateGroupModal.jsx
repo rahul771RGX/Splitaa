@@ -142,6 +142,16 @@ function CreateGroupModal({ show, onHide }) {
     }
   }
 
+  const handleKeyDown = (e) => {
+    // Submit on Enter key (but not Shift+Enter in textarea)
+    if (e.key === 'Enter' && !e.shiftKey && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault()
+      if (groupName.trim() && !isCreating) {
+        handleCreateGroup()
+      }
+    }
+  }
+
   return (
     <Modal show={show} onHide={onHide} centered size="md">
       <div style={{ backgroundColor: colors.bg.card }}>
@@ -195,6 +205,8 @@ function CreateGroupModal({ show, onHide }) {
                 placeholder="Enter group name (e.g., Weekend Trip)"
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                autoFocus
                 style={{
                   ...styles.formControl,
                   borderColor: colors.border.primary,

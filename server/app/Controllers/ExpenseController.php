@@ -4,12 +4,15 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../utils/Response.php';
 require_once __DIR__ . '/../../utils/Auth.php';
 require_once __DIR__ . '/../Models/Expense.php';
+require_once __DIR__ . '/../Models/Group.php';
 
 class ExpenseController {
     private $expenseModel;
+    private $groupModel;
     
     public function __construct() {
         $this->expenseModel = new Expense();
+        $this->groupModel = new Group();
     }
     
     public function index() {
@@ -103,9 +106,11 @@ class ExpenseController {
             Response::notFound('Expense not found');
         }
         
-        // Only the person who paid can edit the expense
-        if ($expense['paid_by'] != $userId) {
-            Response::error('You do not have permission to edit this expense', 403);
+        // Only group admin/host can edit expenses
+        $isAdmin = $this->groupModel->isAdmin($expense['group_id'], $userId);
+        
+        if (!$isAdmin) {
+            Response::error('Only the group host can edit expenses', 403);
         }
         
         // Validation
@@ -138,11 +143,18 @@ class ExpenseController {
         $userId = Auth::getUserIdFromToken();
         if (!$userId) Response::unauthorized();
         
-        // Check if expense belongs to user
+        // Check if expense belongs to user or user is admin
         $expense = $this->expenseModel->findById($id);
         
-        if (!$expense || $expense['paid_by'] != $userId) {
-            Response::error('Expense not found or you do not have permission to delete it', 403);
+        if (!$expense) {
+            Response::error('Expense not found', 404);
+        }
+        
+        // Only group admin/host can delete expenses
+        $isAdmin = $this->groupModel->isAdmin($expense['group_id'], $userId);
+        
+        if (!$isAdmin) {
+            Response::error('Only the group host can delete expenses', 403);
         }
         
         $this->expenseModel->delete($id);
