@@ -59,7 +59,6 @@ class SettlementController {
         $userId = Auth::getUserIdFromToken();
         if (!$userId) Response::unauthorized();
         
-        // Get all friends/users involved in expenses
         $allUsers = $this->userModel->getFriends($userId);
         
         $balances = [];

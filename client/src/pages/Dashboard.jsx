@@ -12,12 +12,10 @@ const Dashboard = () => {
   useEffect(() => {
     const membersMap = new Map();
     
-    // Add current user
     if (currentUser) {
       membersMap.set(currentUser.id, currentUser);
     }
     
-    // Add all group members
     groups.forEach(group => {
       if (group.members) {
         group.members.forEach(member => {
@@ -76,7 +74,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* All Time Link - Removed */}
       </div>
 
       {/* Empty State */}

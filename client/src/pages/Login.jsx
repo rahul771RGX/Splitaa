@@ -15,16 +15,13 @@ function Login() {
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
-  // Check if user is already authenticated
   useEffect(() => {
-    // Check Clerk authentication
     if (userLoaded && isSignedIn && user) {
       console.log('✅ User already signed in with Clerk, redirecting to home')
       navigate('/home', { replace: true })
       return
     }
 
-    // Check backend authentication
     const token = localStorage.getItem('auth_token')
     const currentUser = localStorage.getItem('current_user')
     
@@ -42,7 +39,7 @@ function Login() {
     try {
       await loginUser(email, password)
       navigate('/home')
-      window.location.reload() // Reload to fetch user data
+      window.location.reload()
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.')
     } finally {
@@ -66,7 +63,6 @@ function Login() {
     try {
       setLoading(true)
       
-      // Check if there's an existing Clerk session first
       if (isSignedIn && user) {
         console.log('✅ Already signed in with Clerk, redirecting...')
         navigate('/home', { replace: true })

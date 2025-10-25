@@ -1,4 +1,3 @@
-// Calculate balances for each person
 export const calculateBalances = (expenses, friends) => {
   const balances = {};
   

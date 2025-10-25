@@ -141,23 +141,19 @@ function Account() {
   })
   const [passwordError, setPasswordError] = useState('')
 
-  // Load user data from localStorage or Clerk
   useEffect(() => {
     const loadUserData = () => {
-      // Try to get user data from localStorage first
       const storedUser = localStorage.getItem('current_user')
       
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser)
           setUserData(parsedUser)
-          console.log('✅ User data loaded:', parsedUser)
         } catch (error) {
           console.error('Error parsing user data:', error)
         }
       }
       
-      // If Clerk user is available, use that instead
       if (clerkUser) {
         const clerkUserData = {
           name: clerkUser.fullName || `${clerkUser.firstName} ${clerkUser.lastName}` || 'User',
@@ -166,7 +162,6 @@ function Account() {
           clerkId: clerkUser.id
         }
         setUserData(clerkUserData)
-        console.log('✅ Clerk user data loaded:', clerkUserData)
       }
     }
     
@@ -179,13 +174,10 @@ function Account() {
         setShowPasswordModal(true)
         break
       case 'payments':
-        console.log('Navigate to payments history')
         break
       case 'privacy':
-        console.log('Navigate to privacy settings')
         break
       case 'help':
-        console.log('Navigate to help')
         break
       default:
         break
@@ -194,26 +186,17 @@ function Account() {
 
   const handleLogout = async () => {
     try {
-      console.log('🔓 Logging out...')
-      
-      // Clear localStorage
       localStorage.removeItem('auth_token')
       localStorage.removeItem('current_user')
       localStorage.removeItem('clerk_user')
       
-      // If Clerk user, sign out from Clerk
       if (clerkUser) {
         await signOut()
-        console.log('✅ Signed out from Clerk')
       }
       
-      console.log('✅ Logout successful')
-      
-      // Redirect to login
       navigate('/login', { replace: true })
     } catch (error) {
       console.error('❌ Logout error:', error)
-      // Still redirect to login even if there's an error
       navigate('/login', { replace: true })
     }
   }
@@ -225,7 +208,6 @@ function Account() {
   const handlePasswordChange = () => {
     setPasswordError('')
     
-    // Validation
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
       setPasswordError('All fields are required')
       return
@@ -241,8 +223,6 @@ function Account() {
       return
     }
     
-    // TODO: Implement actual password change API call
-    console.log('Changing password...')
     alert('Password changed successfully!')
     setShowPasswordModal(false)
     setPasswordForm({
@@ -261,7 +241,6 @@ function Account() {
     }
   }
 
-  // Get user initials for avatar fallback
   const getUserInitials = (name) => {
     if (!name) return 'U'
     return name
@@ -272,7 +251,6 @@ function Account() {
       .substring(0, 2)
   }
 
-  // Show loading state while user data is being loaded
   if (!userData) {
     return (
       <div style={{

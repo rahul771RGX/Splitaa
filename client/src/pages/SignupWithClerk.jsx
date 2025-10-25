@@ -70,7 +70,6 @@ function SignupWithClerk() {
                   <p style={{ color: colors.text.secondary }}>Create your account</p>
                 </div>
 
-                {/* Toggle between Clerk and Custom Auth */}
                 {clerkPubKey && (
                   <div className="text-center mb-4">
                     <Button
@@ -88,7 +87,6 @@ function SignupWithClerk() {
                 )}
                 
                 {useClerk && clerkPubKey ? (
-                  // Clerk Sign Up Component
                   <div className="clerk-signup-container">
                     <SignUp 
                       routing="path"
@@ -104,7 +102,6 @@ function SignupWithClerk() {
                     />
                   </div>
                 ) : (
-                  // Custom Signup Form
                   <Form onSubmit={handleCustomSignup}>
                     {error && (
                       <Alert variant="danger" className="mb-3">

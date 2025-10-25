@@ -3,7 +3,6 @@ import { getCurrentUser, getGroups, getSettlements, getAllExpenses } from '../se
 
 const ExpensesContext = createContext();
 
-// Start with empty state - data will be loaded from API
 const initialState = {
   groups: [],
   currentGroup: null,
@@ -136,12 +135,10 @@ function expensesReducer(state, action) {
 export const ExpensesProvider = ({ children }) => {
   const [state, dispatch] = useReducer(expensesReducer, initialState);
 
-  // Load data from API on mount and when auth changes
   useEffect(() => {
     const loadData = async () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       try {
-        // Check if user is authenticated
         const token = localStorage.getItem('auth_token');
         if (!token) {
           console.log('No auth token found, skipping data fetch');
@@ -170,7 +167,6 @@ export const ExpensesProvider = ({ children }) => {
     
     loadData();
 
-    // Listen for auth changes (for Clerk authentication)
     const handleStorageChange = (e) => {
       if (e.key === 'auth_token') {
         console.log('Auth token changed, reloading data...');

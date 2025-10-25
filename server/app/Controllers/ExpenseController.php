@@ -30,7 +30,6 @@ class ExpenseController {
         
         $data = json_decode(file_get_contents('php://input'), true);
         
-        // Validation
         if (!isset($data['description']) || !isset($data['amount'])) {
             Response::error('Description and amount are required', 400);
         }
@@ -54,11 +53,8 @@ class ExpenseController {
             }
         }
         
-        // Get category_id from category name if provided
         $categoryId = null;
         if (isset($data['category'])) {
-            // For now, store category as string in notes or add category mapping
-            // You can enhance this by creating a categories lookup
         }
         
         // Create expense
@@ -99,26 +95,22 @@ class ExpenseController {
         
         $data = json_decode(file_get_contents('php://input'), true);
         
-        // Check if expense exists and user has permission
         $expense = $this->expenseModel->findById($id);
         
         if (!$expense) {
             Response::notFound('Expense not found');
         }
         
-        // Only group admin/host can edit expenses
         $isAdmin = $this->groupModel->isAdmin($expense['group_id'], $userId);
         
         if (!$isAdmin) {
             Response::error('Only the group host can edit expenses', 403);
         }
         
-        // Validation
         if (!isset($data['description']) || !isset($data['amount'])) {
             Response::error('Description and amount are required', 400);
         }
         
-        // Prepare splits if provided
         $splits = [];
         if (isset($data['split_type']) && $data['split_type'] === 'equal' && isset($data['splits'])) {
             $splits = $data['splits'];
@@ -126,7 +118,6 @@ class ExpenseController {
             $splits = $data['splits'];
         }
         
-        // Update expense
         $updatedExpense = $this->expenseModel->update($id, [
             'description' => $data['description'],
             'amount' => $data['amount'],
@@ -143,14 +134,12 @@ class ExpenseController {
         $userId = Auth::getUserIdFromToken();
         if (!$userId) Response::unauthorized();
         
-        // Check if expense belongs to user or user is admin
         $expense = $this->expenseModel->findById($id);
         
         if (!$expense) {
             Response::error('Expense not found', 404);
         }
         
-        // Only group admin/host can delete expenses
         $isAdmin = $this->groupModel->isAdmin($expense['group_id'], $userId);
         
         if (!$isAdmin) {

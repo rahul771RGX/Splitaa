@@ -16,17 +16,14 @@ function SSOCallback() {
         setStatus('Processing authentication...')
         console.log('🔄 Starting OAuth callback handling...')
         
-        // Wait for Clerk to be loaded
         if (!clerk.loaded) {
           console.log('⏳ Waiting for Clerk to load...')
           await new Promise(resolve => setTimeout(resolve, 1000))
         }
 
-        // Handle the redirect callback
         await clerk.handleRedirectCallback()
-        console.log('✅ OAuth redirect callback handled')
+        console.log('OAuth redirect callback handled')
 
-        // Wait for the session to be established
         setStatus('Creating your session...')
         await new Promise(resolve => setTimeout(resolve, 2000))
 
@@ -40,7 +37,7 @@ function SSOCallback() {
         // Check if user is signed in
         if (clerk.user) {
           const user = clerk.user
-          console.log('✅ User authenticated:', user.primaryEmailAddress?.emailAddress)
+          console.log('User authenticated:', user.primaryEmailAddress?.emailAddress)
           
           // Sync with backend to get proper JWT token
           try {
@@ -68,8 +65,8 @@ function SSOCallback() {
               localStorage.setItem('auth_token', result.data.token)
               localStorage.setItem('clerk_user', JSON.stringify(user))
               
-              console.log('✅ User synced with backend')
-              console.log('✅ Backend JWT token created')
+              console.log('User synced with backend')
+              console.log('Backend JWT token created')
             } else {
               // Fallback to client-only storage
               localStorage.setItem('current_user', JSON.stringify(userData))
@@ -78,7 +75,7 @@ function SSOCallback() {
               console.warn('⚠️ Backend sync failed, using fallback storage')
             }
           } catch (syncError) {
-            console.error('❌ Backend sync error:', syncError)
+            console.error('Backend sync error:', syncError)
             // Fallback to client-only storage
             const userData = {
               name: user.fullName || `${user.firstName} ${user.lastName}` || 'User',
@@ -95,11 +92,11 @@ function SSOCallback() {
           
           // Redirect after a short delay
           setTimeout(() => {
-            console.log('✅ Redirecting to /home')
+            console.log('Redirecting to /home')
             navigate('/home', { replace: true })
           }, 1000)
         } else {
-          console.log('❌ No user found after OAuth callback')
+          console.log('No user found after OAuth callback')
           setStatus('Authentication failed. Redirecting to login...')
           setTimeout(() => {
             navigate('/login', { replace: true })

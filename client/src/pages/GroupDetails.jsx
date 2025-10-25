@@ -27,8 +27,6 @@ function GroupDetails() {
   const searchParams = new URLSearchParams(window.location.search)
   const groupIdFromUrl = searchParams.get('groupId')
   
-  console.log('GroupDetails - groupIdFromUrl:', groupIdFromUrl)
-  
   const [activeTab, setActiveTab] = useState('expenses')
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [groupMembers, setGroupMembers] = useState([])
@@ -62,23 +60,18 @@ function GroupDetails() {
   const loadGroupData = async () => {
     try {
       setLoading(true)
-      console.log('Loading group data for ID:', groupIdFromUrl)
       
       const groupData = await getGroup(groupIdFromUrl)
-      console.log('Group data response:', groupData)
       
       const members = await getGroupMembers(groupIdFromUrl)
-      console.log('Members response:', members)
       
       const expenses = await getGroupExpenses(groupIdFromUrl)
-      console.log('Expenses response:', expenses)
       
       // Handle different response structures
       const group = groupData?.data || groupData
       const membersList = members?.data || members || []
       const expensesList = expenses?.data || expenses || []
       
-      console.log('Setting group:', group)
       setSelectedGroup(group)
       setGroupMembers(membersList)
       setGroupExpenses(expensesList)
@@ -327,10 +320,6 @@ function GroupDetails() {
   const calculateMemberBalances = () => {
     const balances = {}
     
-    console.log('=== Starting Balance Calculation ===')
-    console.log('Group Members:', groupMembers)
-    console.log('Group Expenses:', groupExpenses)
-    
     groupMembers.forEach(member => {
       const userId = member.user_id || member.id
       balances[userId] = {
@@ -344,9 +333,6 @@ function GroupDetails() {
     })
 
     groupExpenses.forEach(expense => {
-      console.log('Processing expense:', expense)
-      console.log('Expense splits:', expense.splits)
-      
       const paidBy = parseInt(expense.paid_by)
       const amount = parseFloat(expense.amount)
       
@@ -356,8 +342,6 @@ function GroupDetails() {
       
       if (expense.splits && expense.splits.length > 0) {
         expense.splits.forEach(split => {
-          console.log('Processing split:', split)
-          
           const userId = parseInt(split.user_id)
           const splitAmount = parseFloat(split.amount)
           
@@ -366,15 +350,12 @@ function GroupDetails() {
             
             // Track bilateral debt: userId owes paidBy
             if (userId !== paidBy) {
-              console.log(`User ${userId} owes ${splitAmount} to ${paidBy}`)
-              
               // Find existing debt to this person
               const existingDebt = balances[userId].owesTo.find(d => d.toId === paidBy)
               if (existingDebt) {
                 existingDebt.amount += splitAmount
               } else {
                 const payer = getMemberById(paidBy)
-                console.log('Payer found:', payer)
                 balances[userId].owesTo.push({
                   toId: paidBy,
                   toName: payer?.name || 'Unknown',
@@ -388,7 +369,6 @@ function GroupDetails() {
                 existingCredit.amount += splitAmount
               } else {
                 const debtor = getMemberById(userId)
-                console.log('Debtor found:', debtor)
                 balances[paidBy].owedBy.push({
                   fromId: userId,
                   fromName: debtor?.name || 'Unknown',
@@ -406,9 +386,7 @@ function GroupDetails() {
       balances[userId].balance = balances[userId].paid - balances[userId].owe
     })
 
-    const result = Object.values(balances)
-    console.log('Member Balances with owesTo/owedBy:', result)
-    return result
+    return Object.values(balances)
   }
 
   const getInitials = (name) => {
@@ -700,10 +678,6 @@ function GroupDetails() {
                     const memberId = member.user_id || member.id
                     const isCurrentUser = member.email === currentUser?.email
                     
-                    console.log(`Member: ${member.name}, Balance: ${balance}, IsCurrentUser: ${isCurrentUser}, OwesTo:`, memberData.owesTo, 'OwedBy:', memberData.owedBy)
-                    console.log('Current User:', currentUser)
-                    console.log('Member Email:', member.email, 'Current User Email:', currentUser?.email)
-                    
                     return (
                       <Card
                         key={memberId}
@@ -775,8 +749,6 @@ function GroupDetails() {
                                 const currentUserId = currentUser?.id || groupMembers.find(m => m.email === currentUser?.email)?.user_id || groupMembers.find(m => m.email === currentUser?.email)?.id;
                                 const currentUserOwesThisMember = debt.fromId == currentUserId;
                                 
-                                console.log(`Member ${member.name} is owed by ${debt.fromName} (ID: ${debt.fromId}), Current User ID: ${currentUserId}, Current User Owes: ${currentUserOwesThisMember}`);
-                                
                                 // Only show if current user owes this member
                                 if (!currentUserOwesThisMember) return null;
                                 
@@ -837,8 +809,6 @@ function GroupDetails() {
                                 // Check if this member owes the current user
                                 const currentUserId = currentUser?.id || groupMembers.find(m => m.email === currentUser?.email)?.user_id || groupMembers.find(m => m.email === currentUser?.email)?.id;
                                 const memberOwesCurrentUser = debt.toId == currentUserId;
-                                
-                                console.log(`Member ${member.name} owes to ${debt.toName} (ID: ${debt.toId}), Current User ID: ${currentUserId}, Owes Current User: ${memberOwesCurrentUser}`);
                                 
                                 // Only show if they owe current user
                                 if (!memberOwesCurrentUser) return null;

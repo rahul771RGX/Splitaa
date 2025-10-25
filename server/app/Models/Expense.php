@@ -136,7 +136,6 @@ class Expense {
     }
     
     public function delete($id) {
-        // Splits will be deleted automatically due to CASCADE
         return $this->db->execute("DELETE FROM expenses WHERE id = ?", [$id]);
     }
     

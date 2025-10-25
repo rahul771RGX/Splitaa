@@ -47,7 +47,6 @@ function LoginWithClerk() {
                   <p style={{ color: colors.text.secondary }}>Split expenses with friends</p>
                 </div>
 
-                {/* Toggle between Clerk and Custom Auth */}
                 {clerkPubKey && (
                   <div className="text-center mb-4">
                     <Button
@@ -65,7 +64,6 @@ function LoginWithClerk() {
                 )}
                 
                 {useClerk && clerkPubKey ? (
-                  // Clerk Sign In Component
                   <div className="clerk-signin-container">
                     <SignIn 
                       routing="path"
@@ -81,7 +79,6 @@ function LoginWithClerk() {
                     />
                   </div>
                 ) : (
-                  // Custom Login Form
                   <Form onSubmit={handleCustomLogin}>
                     {error && (
                       <Alert variant="danger" className="mb-3">

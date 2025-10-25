@@ -47,26 +47,22 @@ function Home() {
   const { user, isLoaded } = useUser()
   const { state } = useExpenses()
 
-  // Check authentication - redirect to login if not authenticated
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem('auth_token')
       const currentUser = localStorage.getItem('current_user')
       
-      // If Clerk is loaded and no user, and no backend auth token, redirect
       if (isLoaded && !user && !token) {
         console.log('⚠️ No authentication found, redirecting to login')
         navigate('/login', { replace: true })
         return
       }
       
-      // If we have either Clerk user OR backend token, we're good
       if (user || token) {
-        console.log('✅ User authenticated:', user?.primaryEmailAddress?.emailAddress || 'Backend user')
+        console.log('User authenticated', user?.primaryEmailAddress?.emailAddress || '')
       }
     }
     
-    // Only check after Clerk is loaded
     if (isLoaded) {
       checkAuth()
     }

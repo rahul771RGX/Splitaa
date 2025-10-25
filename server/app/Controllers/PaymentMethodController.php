@@ -97,7 +97,6 @@ class PaymentMethodController {
                     Response::success($methods, 'Payment method added successfully');
                 } catch (Exception $e) {
                     error_log("Payment method store - Error fetching methods: " . $e->getMessage());
-                    // Still send success since the method was created
                     Response::success(['id' => $id], 'Payment method added successfully');
                 }
             } else {
@@ -109,7 +108,6 @@ class PaymentMethodController {
         }
     }
     
-    // PUT /api/payment-methods/:id - Update payment method
     public function update($id) {
         $user = Auth::getUser();
         
@@ -120,7 +118,6 @@ class PaymentMethodController {
         
         $data = json_decode(file_get_contents('php://input'), true);
         
-        // Validate
         if (!isset($data['type']) || !in_array($data['type'], ['upi', 'bank'])) {
             Response::error('Invalid payment method type', 400);
             return;
@@ -143,7 +140,6 @@ class PaymentMethodController {
         }
     }
     
-    // DELETE /api/payment-methods/:id - Delete payment method
     public function delete($id) {
         $user = Auth::getUser();
         
@@ -159,7 +155,6 @@ class PaymentMethodController {
         }
     }
     
-    // PUT /api/payment-methods/:id/set-primary - Set as primary payment method
     public function setPrimary($id) {
         $user = Auth::getUser();
         

@@ -114,7 +114,7 @@ function CreateGroupModal({ show, onHide }) {
         const groupData = {
           name: groupName,
           description: groupDescription,
-          members: [] // Empty array - backend will add creator automatically
+          members: []
         }
         
         console.log('Creating group:', groupData)
@@ -130,10 +130,8 @@ function CreateGroupModal({ show, onHide }) {
         // Close modal
         onHide()
         
-        // Optionally navigate to groups page or refresh
-        // navigate('/groups')
-        // Or trigger a refresh of the groups list
-        window.location.reload() // Simple way to refresh and show new group
+      
+        window.location.reload()
       } catch (err) {
         console.error('❌ Error creating group:', err)
         setError(err.message || 'Failed to create group. Please try again.')
@@ -143,7 +141,6 @@ function CreateGroupModal({ show, onHide }) {
   }
 
   const handleKeyDown = (e) => {
-    // Submit on Enter key (but not Shift+Enter in textarea)
     if (e.key === 'Enter' && !e.shiftKey && e.target.tagName !== 'TEXTAREA') {
       e.preventDefault()
       if (groupName.trim() && !isCreating) {

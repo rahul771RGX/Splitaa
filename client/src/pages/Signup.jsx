@@ -29,7 +29,7 @@ function Signup() {
     try {
       await registerUser(name, email, password)
       navigate('/home')
-      window.location.reload() // Reload to fetch user data
+      window.location.reload()
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.')
     } finally {

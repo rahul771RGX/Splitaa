@@ -197,7 +197,6 @@ function Groups() {
       await deleteGroup(groupId)
       console.log('✅ Group deleted successfully')
       
-      // Refresh the page to show updated groups list
       window.location.reload()
     } catch (error) {
       console.error('❌ Error deleting group:', error)

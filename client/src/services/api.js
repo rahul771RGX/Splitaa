@@ -228,7 +228,6 @@ export const getUserPaymentMethods = async (userId) => {
   return await apiRequest(`/users/${userId}/payment-methods`);
 };
 
-// Default export for backward compatibility
 export default {
   loginUser,
   registerUser,

@@ -14,7 +14,6 @@ import {
   getUserPaymentMethods
 } from '../services/api'
 import { formatCurrency } from '../services/calculations'
-import { currentUser } from '../data/mockData'
 
 const styles = {
   paymentPage: {
@@ -51,6 +50,7 @@ function Payment() {
   const isMobile = window.innerWidth < 768
   const { colors } = useTheme()
   const { state } = useExpenses()
+  const currentUser = state.currentUser
   
   const [debts, setDebts] = useState([])
   const [paymentMethods, setPaymentMethods] = useState([])
@@ -68,6 +68,13 @@ function Payment() {
     ifsc: ''
   })
   
+  const [methodFormErrors, setMethodFormErrors] = useState({
+    upiId: '',
+    bankName: '',
+    accountNumber: '',
+    ifsc: ''
+  })
+  
   const [paymentForm, setPaymentForm] = useState({
     amount: '',
     method: '',
@@ -76,15 +83,116 @@ function Payment() {
   })
 
   useEffect(() => {
-    loadDebtsData()
-    loadPaymentMethods()
-  }, [])
+    if (currentUser) {
+      loadDebtsData()
+      loadPaymentMethods()
+    }
+  }, [currentUser])
+
+  const validateUpiId = (upiId) => {
+    // UPI ID format: username@bankhandle
+    // Username: Phone number (10 digits) OR valid username (must contain at least one letter and be 4+ chars)
+    // Bank handle: Known UPI handles only
+    const validHandles = [
+      'paytm', 'ybl', 'oksbi', 'okaxis', 'okhdfcbank', 'okicici', 'airtel', 
+      'fbl', 'ibl', 'axl', 'sbi', 'pnb', 'upi', 'cnrb', 'ezeepay', 'idfcbank',
+      'federal', 'barodampay', 'axisb', 'indus', 'yapl', 'icici', 'kotak',
+      'sliceaxis', 'timecosmos', 'waicici', 'waaxis', 'waokhdfcbank', 'hsbc',
+      'jupiter', 'razorpay', 'freecharge', 'mobikwik', 'amazonpay', 'apl'
+    ]
+    
+    if (!upiId) {
+      return 'UPI ID is required'
+    }
+    
+    const parts = upiId.split('@')
+    if (parts.length !== 2) {
+      return 'Invalid UPI ID format. Example: 9876543210@paytm or yourname@ybl'
+    }
+    
+    const [username, handle] = parts
+    
+    // Validate username part
+    if (username.length < 4 || username.length > 50) {
+      return 'Username must be between 4-50 characters'
+    }
+    
+    // Check if username is a phone number (10 digits)
+    const isPhoneNumber = /^\d{10}$/.test(username)
+    
+    // If not a phone number, check for valid username pattern
+    if (!isPhoneNumber) {
+      // Must contain at least one letter and be alphanumeric with dots/hyphens/underscores
+      const hasLetter = /[a-zA-Z]/.test(username)
+      const isValidPattern = /^[a-zA-Z0-9._-]+$/.test(username)
+      
+      if (!hasLetter) {
+        return 'Username must contain at least one letter or be a 10-digit phone number'
+      }
+      
+      if (!isValidPattern) {
+        return 'Username can only contain letters, numbers, dots, hyphens, and underscores'
+      }
+      
+      // Username should not be just random characters - require at least 4 chars with meaning
+      if (username.length < 4) {
+        return 'Username must be at least 4 characters long'
+      }
+    }
+    
+    // Validate bank handle - MUST be from the valid list
+    const handleLower = handle.toLowerCase()
+    if (!validHandles.includes(handleLower)) {
+      return `Invalid UPI handle. Use valid handles like: paytm, ybl, oksbi, okaxis, okicici, etc.`
+    }
+    
+    return ''
+  }
+
+  const validateIfsc = (ifsc) => {
+    // IFSC format: 4 letters (bank code) + 0 + 6 digits/letters (branch code)
+    // Example: SBIN0001234, HDFC0000123
+    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/
+    
+    if (!ifsc) {
+      return 'IFSC code is required'
+    }
+    if (!ifscRegex.test(ifsc.toUpperCase())) {
+      return 'Invalid IFSC code format. Example: SBIN0001234'
+    }
+    return ''
+  }
+
+  const validateAccountNumber = (accountNumber) => {
+    // Account number: 9-18 digits
+    const accountRegex = /^[0-9]{9,18}$/
+    
+    if (!accountNumber) {
+      return 'Account number is required'
+    }
+    if (!accountRegex.test(accountNumber)) {
+      return 'Account number must be 9-18 digits'
+    }
+    return ''
+  }
+
+  const validateBankName = (bankName) => {
+    if (!bankName || bankName.trim().length < 2) {
+      return 'Bank name is required'
+    }
+    return ''
+  }
 
   const loadDebtsData = async () => {
+    if (!currentUser) {
+      return
+    }
+    
     try {
       setLoading(true)
+      
       const groupsResponse = await getGroups()
-      const groups = groupsResponse.data || []
+      const groups = groupsResponse?.data || groupsResponse || []
       
       const allDebts = []
       
@@ -92,8 +200,8 @@ function Payment() {
         const membersResponse = await getGroupMembers(group.id)
         const expensesResponse = await getGroupExpenses(group.id)
         
-        const members = membersResponse.data || []
-        const expenses = expensesResponse.data || []
+        const members = membersResponse?.data || membersResponse || []
+        const expenses = expensesResponse?.data || expensesResponse || []
         
         // Calculate balances
         const balances = {}
@@ -132,7 +240,8 @@ function Payment() {
         })
         
         // Find current user's debts (negative balance = owes money)
-        const currentUserData = members.find(m => m.email === currentUser.email)
+        const currentUserData = members.find(m => m.email === currentUser?.email)
+        
         if (currentUserData) {
           const currentUserId = currentUserData.user_id || currentUserData.id
           const currentUserBalance = balances[currentUserId]
@@ -260,11 +369,6 @@ function Payment() {
 
   const handleRecordPayment = () => {
     // TODO: Send payment record to backend
-    console.log('Recording payment:', {
-      debt: selectedDebt,
-      payment: paymentForm
-    })
-    
     alert('Payment recorded successfully! The debt will be settled.')
     setShowPaymentModal(false)
     // Reload debts

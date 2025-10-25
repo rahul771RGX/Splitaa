@@ -28,14 +28,12 @@ class AuthController {
             Response::error('Password must be at least 6 characters', 400);
         }
         
-        // Check if user exists
         $existingUser = $this->userModel->findByEmail($data['email']);
         
         if ($existingUser) {
             Response::error('Email already registered', 409);
         }
         
-        // Create user
         $user = $this->userModel->create([
             'name' => $data['name'],
             'email' => $data['email'],
@@ -45,7 +43,6 @@ class AuthController {
         
         $userId = $user['id'];
         
-        // Generate token
         $token = Auth::generateToken($userId);
         
         Response::success([
@@ -57,27 +54,22 @@ class AuthController {
     public function login() {
         $data = json_decode(file_get_contents('php://input'), true);
         
-        // Validation
         if (!isset($data['email']) || !isset($data['password'])) {
             Response::error('Email and password are required', 400);
         }
         
-        // Get user
         $user = $this->userModel->findByEmail($data['email']);
         
         if (!$user) {
             Response::error('Invalid credentials', 401);
         }
         
-        // Verify password
         if (!Auth::verifyPassword($data['password'], $user['password'])) {
             Response::error('Invalid credentials', 401);
         }
         
-        // Remove password from response
         unset($user['password']);
         
-        // Generate token
         $token = Auth::generateToken($user['id']);
         
         Response::success([
@@ -105,21 +97,17 @@ class AuthController {
     public function syncClerkUser() {
         $data = json_decode(file_get_contents('php://input'), true);
         
-        // Validation
         if (!isset($data['clerkId']) || !isset($data['email'])) {
             Response::error('Clerk ID and email are required', 400);
         }
         
-        // Check if user exists by email
         $existingUser = $this->userModel->findByEmail($data['email']);
         
         if ($existingUser) {
-            // Update avatar if provided
             if (isset($data['avatar']) && $data['avatar']) {
                 $this->userModel->update($existingUser['id'], ['avatar' => $data['avatar']]);
             }
             
-            // Generate token
             $token = Auth::generateToken($existingUser['id']);
             
             Response::success([
@@ -129,7 +117,6 @@ class AuthController {
             return;
         }
         
-        // Create new user from Clerk data
         $user = $this->userModel->create([
             'name' => $data['name'] ?? 'User',
             'email' => $data['email'],
@@ -139,7 +126,6 @@ class AuthController {
         
         $userId = $user['id'];
         
-        // Generate token
         $token = Auth::generateToken($userId);
         
         Response::success([
