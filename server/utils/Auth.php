@@ -52,31 +52,29 @@ class Auth {
     public static function getUserIdFromToken() {
         $headers = getallheaders();
         $token = null;
-        
         // Debug logging
         error_log("DEBUG: All headers: " . json_encode($headers));
-        
-        if (isset($headers['Authorization'])) {
-            $token = str_replace('Bearer ', '', $headers['Authorization']);
-            error_log("DEBUG: Token extracted: " . substr($token, 0, 50) . "...");
-        } else {
-            error_log("DEBUG: No Authorization header found");
+
+        // Case-insensitive search for Authorization header
+        foreach ($headers as $key => $value) {
+            if (strtolower($key) === 'authorization') {
+                $token = str_replace('Bearer ', '', $value);
+                error_log("DEBUG: Token extracted: " . substr($token, 0, 50) . "...");
+                break;
+            }
         }
-        
         if (!$token) {
+            error_log("DEBUG: No Authorization header found");
             error_log("DEBUG: No token found, returning null");
             return null;
         }
-        
         // Regular JWT token validation
         $payload = self::validateToken($token);
         error_log("DEBUG: Token validation result: " . json_encode($payload));
-        
         if ($payload && isset($payload['user_id'])) {
             error_log("DEBUG: Returning user_id: " . $payload['user_id']);
             return $payload['user_id'];
         }
-        
         error_log("DEBUG: Token validation failed or no user_id in payload");
         return null;
     }
