@@ -73,31 +73,29 @@ class Auth {
     public static function getUser() {
         $headers = getallheaders();
         $token = null;
-        
-        if (isset($headers['Authorization'])) {
-            $token = str_replace('Bearer ', '', $headers['Authorization']);
+        // Case-insensitive search for Authorization header
+        foreach ($headers as $key => $value) {
+            if (strtolower($key) === 'authorization') {
+                $token = str_replace('Bearer ', '', $value);
+                break;
+            }
         }
-        
         if (!$token) {
             return null;
         }
-        
         // Connect to database
         require_once __DIR__ . '/../config/database.php';
         $db = Database::getInstance();
         $conn = $db->getConnection();
-        
         // Regular JWT token validation
         $payload = self::validateToken($token);
         if (!$payload || !isset($payload['user_id'])) {
             return null;
         }
-        
         // Fetch user from database
         $stmt = $conn->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
         $stmt->execute([$payload['user_id']]);
         $user = $stmt->fetch();
-        
         return $user;
     }
     
