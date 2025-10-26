@@ -90,14 +90,16 @@ CREATE TABLE IF NOT EXISTS expenses (
     date DATE NOT NULL,
     notes TEXT,
     receipt VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (paid_by) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
-    FOREIGN KEY (group_id) REFERENCES `groups`(id) ON DELETE CASCADE,
-    INDEX idx_paid_by (paid_by),
-    INDEX idx_group_id (group_id),
-    INDEX idx_date (date)
+        category VARCHAR(255) DEFAULT NULL,
+        split_type VARCHAR(50) DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (paid_by) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+        FOREIGN KEY (group_id) REFERENCES `groups`(id) ON DELETE CASCADE,
+        INDEX idx_paid_by (paid_by),
+        INDEX idx_group_id (group_id),
+        INDEX idx_date (date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Expense splits table (who owes what for each expense)
