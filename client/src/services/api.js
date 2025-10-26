@@ -8,7 +8,9 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 // Helper function to get auth token
 const getAuthToken = () => {
-  return localStorage.getItem('auth_token');
+  const token = localStorage.getItem('auth_token');
+  console.log('🔑 Auth token retrieved:', token ? token.substring(0, 50) + '...' : 'null');
+  return token;
 };
 
 // Helper function to get current user from localStorage
@@ -27,6 +29,9 @@ const apiRequest = async (endpoint, options = {}) => {
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    console.log('📤 Sending request with Authorization header');
+  } else {
+    console.log('⚠️ No auth token, sending request without Authorization');
   }
 
   try {
