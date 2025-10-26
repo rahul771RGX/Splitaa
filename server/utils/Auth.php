@@ -57,19 +57,17 @@ class Auth {
             $token = str_replace('Bearer ', '', $headers['Authorization']);
         }
         
-        // Check if it's a Clerk token (format: clerk_user_xxxxx)
-        if ($token && strpos($token, 'clerk_user_') === 0) {
-            // For Clerk users, extract the Clerk ID and find/create user
-            $clerkId = $token; // The token IS the clerk ID
-            
-            // Try to find user by clerk_id (we'll need to add this field)
-            // For now, return a special ID that controllers can handle
-            return $clerkId;
+        if (!$token) {
+            return null;
         }
         
         // Regular JWT token validation
         $payload = self::validateToken($token);
-        return $payload ? $payload['user_id'] : null;
+        if ($payload && isset($payload['user_id'])) {
+            return $payload['user_id'];
+        }
+        
+        return null;
     }
     
     public static function getUser() {
@@ -88,17 +86,6 @@ class Auth {
         require_once __DIR__ . '/../config/database.php';
         $db = Database::getInstance();
         $conn = $db->getConnection();
-        
-        // Check if it's a Clerk token (format: clerk_user_xxxxx)
-        if (strpos($token, 'clerk_user_') === 0) {
-            $clerkId = $token;
-            // Find user by clerk_id or email
-            $stmt = $conn->prepare("SELECT * FROM users WHERE email LIKE ? LIMIT 1");
-            $email = '%clerk%';
-            $stmt->execute([$email]);
-            $user = $stmt->fetch();
-            return $user;
-        }
         
         // Regular JWT token validation
         $payload = self::validateToken($token);
