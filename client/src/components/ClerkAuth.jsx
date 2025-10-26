@@ -44,15 +44,7 @@ export function ClerkUserSync() {
           if (result.success && result.data) {
             localStorage.setItem('current_user', JSON.stringify(result.data.user))
             localStorage.setItem('clerk_user', JSON.stringify(user))
-            
             localStorage.setItem('auth_token', result.data.token)
-            
-            console.log('✅ Clerk user synced with backend:', result.data.user)
-            console.log('✅ Backend JWT token created')
-            
-            if (result.data.is_new) {
-              console.log('🎉 New user created in database!')
-            }
           } else {
             console.error('❌ Failed to sync with backend:', result.message)
             
