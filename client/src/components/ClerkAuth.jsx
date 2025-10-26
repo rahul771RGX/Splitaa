@@ -2,6 +2,7 @@ import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn, useUser } from '@
 import { useEffect } from 'react'
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
 export function ClerkAuthProvider({ children }) {
   if (!clerkPubKey) {
@@ -30,7 +31,7 @@ export function ClerkUserSync() {
             avatar: user.imageUrl
           }
           
-          const response = await fetch('http://localhost:8000/api/auth/sync-clerk', {
+          const response = await fetch(`${API_URL}/auth/sync-clerk`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'

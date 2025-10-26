@@ -4,6 +4,8 @@ import { useClerk } from '@clerk/clerk-react'
 import { Container, Spinner } from 'react-bootstrap'
 import { useTheme } from '../contexts/ThemeContext'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+
 function SSOCallback() {
   const { colors } = useTheme()
   const navigate = useNavigate()
@@ -49,7 +51,7 @@ function SSOCallback() {
               avatar: user.imageUrl
             }
             
-            const response = await fetch('http://localhost:8000/api/auth/sync-clerk', {
+            const response = await fetch(`${API_URL}/auth/sync-clerk`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
