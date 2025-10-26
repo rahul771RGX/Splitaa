@@ -141,18 +141,16 @@ export const ExpensesProvider = ({ children }) => {
       try {
         const token = localStorage.getItem('auth_token');
         if (!token) {
-          console.log('No auth token found, skipping data fetch');
           dispatch({ type: 'SET_LOADING', payload: false });
           return;
         }
 
-        console.log('Loading data with token:', token.substring(0, 20) + '...');
 
         const [currentUser, groups, expenses, settlements] = await Promise.all([
-          getCurrentUser().catch(err => { console.error('Failed to fetch user:', err); return null; }),
-          getGroups().catch(err => { console.error('Failed to fetch groups:', err); return []; }),
-          getAllExpenses().catch(err => { console.error('Failed to fetch expenses:', err); return []; }),
-          getSettlements().catch(err => { console.error('Failed to fetch settlements:', err); return []; })
+          getCurrentUser().catch(err => { return null; }),
+          getGroups().catch(err => { return []; }),
+          getAllExpenses().catch(err => { return []; }),
+          getSettlements().catch(err => { return []; })
         ]);
         
         dispatch({
@@ -160,7 +158,6 @@ export const ExpensesProvider = ({ children }) => {
           payload: { currentUser, friends: [], groups, expenses, settlements }
         });
       } catch (error) {
-        console.error('Error loading data:', error);
         dispatch({ type: 'SET_ERROR', payload: error.message });
       }
     };
@@ -169,7 +166,6 @@ export const ExpensesProvider = ({ children }) => {
 
     const handleStorageChange = (e) => {
       if (e.key === 'auth_token') {
-        console.log('Auth token changed, reloading data...');
         loadData();
       }
     };
