@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" ng-app="splitaaAdmin">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Splitaa — Admin Panel (AngularJS)</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <script src="app.js"></script>
+</head>
+
+<body ng-controller="AdminCtrl as vm">
+    <header class="topbar">
+        <h1>Splitaa Admin Panel</h1>
+        <div class="controls">
+            <label>
+        <input type="checkbox" ng-model="vm.useRealApi"> Use real API
+      </label>
+            <input type="text" ng-model="vm.apiBase" placeholder="API base URL (optional)" />
+            <button ng-click="vm.reload()">Reload</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="panel">
+            <h2>Users <small>({{vm.users.length}})</small></h2>
+            <form ng-submit="vm.addUser()" class="inline-form">
+                <input ng-model="vm.newUser.name" placeholder="Name" required />
+                <input ng-model="vm.newUser.email" placeholder="Email" required />
+                <button type="submit">Add</button>
+            </form>
+            <table class="list">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="u in vm.users">
+                        <td>{{$index + 1}}</td>
+                        <td>{{u.name}}</td>
+                        <td>{{u.email}}</td>
+                        <td><button ng-click="vm.deleteUser($index)">Delete</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="panel">
+            <h2>Groups <small>({{vm.groups.length}})</small></h2>
+            <form ng-submit="vm.addGroup()" class="inline-form">
+                <input ng-model="vm.newGroup.name" placeholder="Group name" required />
+                <button type="submit">Add</button>
+            </form>
+            <ul class="list simple">
+                <li ng-repeat="g in vm.groups">
+                    <strong>{{g.name}}</strong>
+                    <button ng-click="vm.deleteGroup($index)">Delete</button>
+                </li>
+            </ul>
+        </section>
+
+        <section class="panel">
+            <h2>Expenses <small>({{vm.expenses.length}})</small></h2>
+            <form ng-submit="vm.addExpense()" class="inline-form">
+                <input ng-model="vm.newExpense.desc" placeholder="Description" required />
+                <input ng-model="vm.newExpense.amount" type="number" placeholder="Amount" required />
+                <button type="submit">Add</button>
+            </form>
+            <table class="list">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="e in vm.expenses">
+                        <td>{{$index + 1}}</td>
+                        <td>{{e.desc}}</td>
+                        <td>{{e.amount | currency}}</td>
+                        <td><button ng-click="vm.deleteExpense($index)">Delete</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <small>Admin panel demo built with AngularJS — mock-data by default. Toggle "Use real API" to enable real requests (configure base URL).</small>
+    </footer>
+</body>
+
+</html>
