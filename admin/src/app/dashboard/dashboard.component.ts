@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AdminService } from '../services/admin.service';
+import { NotificationService } from '../services/notification.service';
+import { NotificationPanelComponent } from './notification-panel.component';
 
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
@@ -27,7 +29,7 @@ interface Expense {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, HttpClientModule, NotificationPanelComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -38,6 +40,9 @@ export class DashboardComponent implements OnInit {
   settlements = 8;
   activeUsers = 3;
   inactiveUsers = 2;
+
+  // Notification observables
+  unreadCount$: any;
 
   // Computed properties for stats
   get totalUsers(): number {
@@ -60,7 +65,13 @@ export class DashboardComponent implements OnInit {
     return this.users.filter(u => u.gender === 'female').length;
   }
 
-  constructor(private adminService: AdminService, private router: Router) {}
+  constructor(
+    private adminService: AdminService,
+    private router: Router,
+    private notificationService: NotificationService
+  ) {
+    this.unreadCount$ = this.notificationService.unreadCount$;
+  }
 
   ngOnInit() {
     this.loadData();
@@ -131,6 +142,10 @@ export class DashboardComponent implements OnInit {
   getBarHeight(amount: number): number {
     const maxAmount = Math.max(...this.expenses.map(e => e.amount));
     return (amount / maxAmount) * 100;
+  }
+
+  toggleNotifications(): void {
+    this.notificationService.togglePanel();
   }
 
   logout() {

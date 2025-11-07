@@ -5,14 +5,22 @@
         <header class="dashboard-header">
             <h1>Dashboard Overview</h1>
             <div class="header-actions">
-                <button class="notification-btn">
-                    <span>🔔</span>
-                </button>
+                <div class="notification-container">
+                    <button class="notification-btn" (click)="toggleNotifications()">
+                        <span>🔔</span>
+                        <span class="badge" *ngIf="(unreadCount$ | async) as count" [class.has-unread]="count > 0">
+                            {{ count }}
+                        </span>
+                    </button>
+                </div>
                 <button class="logout-btn" (click)="logout()">
                     <span>Logout</span>
                 </button>
             </div>
         </header>
+
+        <!-- Notification Panel -->
+        <app-notification-panel></app-notification-panel>
 
         <!-- Statistics Cards -->
         <div class="stats-grid">
