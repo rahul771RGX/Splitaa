@@ -1,0 +1,46 @@
+Git change report for repository: Splitaa
+Date: 2025-11-07 (UTC)
+Branch: main
+
+Summary (parsed from `git status --porcelain`):
+
+Modified (tracked files with changes):
+ - admin/src/app/services/admin.service.ts (modified)
+ - client/package-lock.json (modified)
+ - client/package.json (modified)
+
+Deleted (tracked files removed):
+ - client/.env.example (deleted)
+ - server/.env.example (deleted)
+
+Untracked (new files/directories):
+ - splita/  (untracked directory)
+
+Raw porcelain output:
+ M admin/src/app/services/admin.service.ts
+ D client/.env.example
+ M client/package-lock.json
+ M client/package.json
+ D server/.env.example
+?? splita/
+
+How to interpret:
+ - Lines starting with ' M' are modified tracked files.
+ - Lines starting with ' D' are tracked files deleted in working tree.
+ - Lines starting with '??' are untracked files or directories.
+
+Next steps you can run locally:
+ - Preview full status: git status
+ - See staged changes: git status --short (same as porcelain)
+ - Show diffs: git diff <file>
+ - Add a file to staging: git add <path>
+ - Discard local changes for a file: git restore <path>
+
+Tracking automation (I created `track_changes.bat` which you can run to append snapshots to this report):
+ - To run: open cmd at repository root and run `track_changes.bat`
+ - It will append a timestamped `git status --porcelain` snapshot to `git-change-report.txt`.
+
+If you'd like, I can:
+ - Stage and commit the `track_changes.bat` for you and push it (confirm if you want that),
+ - Or create a PowerShell or Node script instead (if you prefer),
+ - Or set up a simple Git alias to run this snapshot command.
