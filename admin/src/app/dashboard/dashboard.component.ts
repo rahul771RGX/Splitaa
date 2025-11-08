@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { Observable } from 'rxjs';
 import { AdminService } from '../services/admin.service';
 import { NotificationService } from '../services/notification.service';
 import { NotificationPanelComponent } from './notification-panel.component';
@@ -42,7 +43,7 @@ export class DashboardComponent implements OnInit {
   inactiveUsers = 2;
 
   // Notification observables
-  unreadCount$: any;
+  unreadCount$: Observable<number>;
 
   // Computed properties for stats
   get totalUsers(): number {

@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NotificationService, Notification } from '../services/notification.service';
+import { Component, OnInit } from '@angular/core';
+import { Observable } from 'rxjs';
+import { Notification, NotificationService } from '../services/notification.service';
 
 @Component({
   selector: 'app-notification-panel',
@@ -21,13 +22,13 @@ import { NotificationService, Notification } from '../services/notification.serv
       </div>
 
       <div class="notification-list">
-        <div *ngIf="(notifications$ | async) as notifs">
-          <div *ngIf="notifs.length === 0" class="empty-state">
+        <ng-container *ngIf="notifications$ | async as notifs">
+          <div *ngIf="(notifs || []).length === 0" class="empty-state">
             <p>📭 No notifications</p>
           </div>
 
           <div
-            *ngFor="let notif of notifs"
+            *ngFor="let notif of (notifs || [])"
             class="notification-item"
             [class.unread]="!notif.read"
             (click)="markAsRead(notif.id)"
@@ -42,7 +43,7 @@ import { NotificationService, Notification } from '../services/notification.serv
               🗑️
             </button>
           </div>
-        </div>
+        </ng-container>
       </div>
 
       <div class="notification-footer">
@@ -236,9 +237,9 @@ import { NotificationService, Notification } from '../services/notification.serv
   `]
 })
 export class NotificationPanelComponent implements OnInit {
-  notifications$: any;
-  unreadCount$: any;
-  showPanel$: any;
+  notifications$: Observable<Notification[]>;
+  unreadCount$: Observable<number>;
+  showPanel$: Observable<boolean>;
 
   constructor(private notificationService: NotificationService) {
     this.notifications$ = this.notificationService.notifications$;

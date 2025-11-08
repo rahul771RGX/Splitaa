@@ -11,7 +11,7 @@
                         <span 
                             class="badge" 
                             *ngIf="unreadCount$ | async as count" 
-                            [class.has-unread]="count > 0">
+                            [class.has-unread]="(count || 0) > 0">
                             {{ count }}
                         </span>
                     </button>
